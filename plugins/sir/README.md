@@ -27,9 +27,9 @@ Per the split decision, the heavy engines are their own CLIs the agents call out
 | **`sir-factory`** | build orchestrator (`factory.mjs` + `lib/`: install → decompose → stamp → re-emit → grade → pack) | `sir-factory-runner` |
 | **`rdv`** | trust-nothing verifier (`rederive` CLI) — `check` / `resynth` | `sir-verify`, consumers |
 
-## ⚠️ Wiring TODO (scaffold → working plugin)
+## Status
 
-This is the **scaffold** — structure + manifests + components in place. Before it's a working plugin:
-1. **De-hardcode paths.** The copied agent/skill prompts reference monorepo paths (e.g. `…/orchestrator/factory.mjs`). Replace with the `sir-factory` CLI entrypoint (resolved via PATH or `${CLAUDE_PLUGIN_ROOT}`), and `rdv` similarly.
-2. **Publish `sir-factory`** as its own CLI/npm package (split from `experiments/sir-toolkit/orchestrator`), and document install.
-3. **Smoke test:** `/plugin marketplace add` → `install` → run `sir-factory-runner` on one fresh unit end-to-end.
+Structure, manifests, components, **engine split, and path wiring are done**:
+1. ✅ **Paths de-hardcoded** — agent/skill prompts invoke the `sir-factory` CLI (a global command) + `rdv`, not monorepo paths.
+2. ✅ **`sir-factory` extracted** — its own zero-dep CLI ([github.com/rederive/sir-factory](https://github.com/rederive/sir-factory)), the canonical home of the orchestrator (the monorepo copy is retired).
+3. ☐ **Smoke test** — `/plugin marketplace add` → `install` → run `sir-factory-runner` on one fresh unit end-to-end (the remaining step).
