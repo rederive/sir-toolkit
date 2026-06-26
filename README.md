@@ -7,7 +7,7 @@ Distributes the **SIR verified-recompose** methodology as a Claude Code plugin.
 ## Add the marketplace
 
 ```
-/plugin marketplace add lanestp/sir-toolkit      # once it's pushed to GitHub
+/plugin marketplace add rederive/sir-toolkit     # once it's pushed to GitHub
 /plugin install sir@sir-toolkit
 ```
 

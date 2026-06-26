@@ -3,14 +3,14 @@
   "name": "sir-toolkit",
   "description": "SIR verified-recompose — decompile a package into a verified, self-contained re-implementation: a sighted decomposer reads the source once and emits a SIR + held-out oracle; N blind clean-room emitters reconstruct from the contract alone; two gates (held-out quorum + saturation differential) decide. The methodology behind the @rederive/* catalog.",
   "owner": {
-    "name": "Lane Thompson",
-    "email": "lanestp@gmail.com"
+    "name": "rederive",
+    "url": "https://rederive.ai"
   },
   "plugins": [
     {
       "name": "sir",
       "description": "SIR verified-recompose toolkit (SIR Schema v0.2): the decompose / write-oracle / blind-re-emit / sir-verify skills and the sir-decomposer / sir-reemitter(-cr) / sir-factory-runner agents. Drives the `sir-factory` CLI to build bundles and `rdv` to verify them (both shipped as dependencies, not bundled).",
-      "author": { "name": "Lane Thompson" },
+      "author": { "name": "rederive", "url": "https://rederive.ai" },
       "category": "development",
       "source": "./plugins/sir",
       "homepage": "https://rederive.ai"
