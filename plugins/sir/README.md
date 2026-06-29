@@ -29,4 +29,8 @@ Structure, manifests, components, **engine split, path wiring, and cold-install 
 1. ✅ **Paths de-hardcoded** — agent/skill prompts invoke the `sir-factory` CLI (a global command) + `rdv`, not monorepo paths.
 2. ✅ **`sir-factory` extracted** — its own zero-dep CLI ([github.com/rederive/sir-factory](https://github.com/rederive/sir-factory)), the canonical home of the orchestrator (the monorepo copy is retired).
 3. ✅ **Cold-install-clean** — `sir-verify` rewritten to drive only the shipped `sir-factory` + `rdv`; the misfiled semcom decomposition skills (LLVM-typed capability contracts) removed. The plugin is now SIR-recompose only: one skill (`sir-verify`) + the four role agents.
-4. ☐ **Smoke test** — `/plugin marketplace add` → `install` → run `sir-factory-runner` on one fresh unit end-to-end (the remaining step).
+4. ✅ **Smoke test** — `marketplace add` → `install sir@sir-toolkit` (clean) → drove a fresh unit
+   (`escape-string-regexp@5`) end-to-end: sighted decompose → stamp → 3× blind clean-room re-emit →
+   **grade VERIFIED (quorum 3/3, differential 500/500)** → pack → **`rdv check`: ALL UNITS VERIFIED**. The three
+   blind emitters independently derived **two distinct implementations** from the contract SIR — real independence,
+   not transcription.
