@@ -10,6 +10,18 @@ frozen oracle = training set (in the prompt), held-out = test set (the impl neve
 quorum = ensemble agreement, coverage = hard-example mining. An in-prompt pass means nothing
 (train accuracy is always ~100%); the **held-out pass** is the only evidence of generalization.
 
+**Two legs, and they are NOT substitutes — ship only when both hold.** A verified-recompose passes
+*both*: (1) a **differential vs the real unit** — your emission reproduces the original's behavior
+(held-out expecteds are stamped from it; the factory's saturation differential extends this to N≥400
+random cases). Proves *correctness*. (2) an **independent quorum** — ≥2 *blind* emitters, contract
+only, agree on the full held-out set. Proves the *contract is sufficient to independently reconstruct
+the unit* (the ship-the-contract / `rdv resynth` property). They catch different failures, so neither
+replaces the other: **no differential, however large, removes the quorum requirement** — you built or
+stamped your version *with the original in view*, so quorum is the *only* evidence an independent party
+could rebuild it from the contract alone. (Conversely, a quorum on a thin oracle can agree on the wrong
+thing — that is the coverage leg's job.) This holds for hand-rolled/custom units too: there is no "I
+verified it well enough to skip the blind leg."
+
 Toolkit: `experiments/sir-toolkit/`
 - `verify.py <bundle> [--n 3] [--rounds 2] [--force]` — the quorum re-emit + held-out gate.
 - `rails/stamp.mts` — differential stamper (runs the REAL fn to fill expecteds; never hand-author).
@@ -38,6 +50,19 @@ Toolkit: `experiments/sir-toolkit/`
 A "novel" unit is rarely uniformly oracle-poor: **decompose to named leaves** (which are
 oracle-rich by node 1–3) + property oracles for the thin glue + frozen human rulings for judgment.
 Decomposition *is* oracle-sourcing.
+
+### Off-fit classes — pick the sanctioned path, never improvise a grader
+Some units don't sit cleanly on nodes 1–4. Do NOT hand-author a one-off grader for them (an agent that
+is both author and judge of its own envelope is the vacuous-gate trap). Instead:
+- **Higher-order / async-control** (takes a function; manages concurrency/scheduling — `p-map`,
+  `p-limit`): differential vs the real unit using *instrumented probe mappers* (a mapper that records
+  call order/args/timing); assert results **+ observable order + the concurrency bound**. It is a node-1
+  differential with the function arg as a probe, not a value table. Still needs the quorum leg.
+- **Orchestration** (walks a tree / drives IO / glues leaves — `globby`, a router): **decompose** —
+  verify the leaves individually, then the thin glue by differential vs real over a *saturating fixture
+  set* (random trees × in-scope inputs, sorted-result equality). Don't quorum the whole engine as one unit.
+- **Un-oracleable here** (no real to run, no invariant, no reference): **quarantine** — emit a
+  `QUARANTINED` record with the reason. Never ship a grader that can't fail.
 
 ## Step 2 — build the bundle
 
@@ -217,6 +242,13 @@ Single-unit interactive runs don't need the fleet — use `verify.py`.
   that a single-emission run would have shipped blind. The minority is the bug.
 - **All emissions miss the same held-out class** → a shared wrong prior = a real quirk/finding of
   the unit. Density-cover it (several fresh inputs of that class, not one) and re-run.
+- **Emissions diverge on a COMPLEX / compiler-class unit** (glob matcher, parser, expression evaluator)
+  → read it as an *under-decomposition* signal, not a missing spec detail. The wrong fix is to pile
+  algorithmic detail into the monolith's spec until they converge: a spec that dictates the exact output
+  (the regex to emit, the parse table) buys convergence by **transcription**, not independent derivation
+  — which hollows out the very independence the quorum measures. The right fix is **decompose** into
+  named leaves (`expandBraces`, `glob-to-regex`, `compose`), each with a tight *behavioral* oracle, and
+  quorum each. Keep the spec behavioral; push the algorithm into separately-verified leaves.
 - **Never trust the loop's own prose summary** — re-run the rail on the emit files. (The fleet's
   own synthesis agent once misreported which round a miss happened in; the disk was ground truth.)
 

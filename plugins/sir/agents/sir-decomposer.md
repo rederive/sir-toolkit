@@ -119,6 +119,11 @@ self-consistency. Do not merely restate. The goal: independent engineers reading
    ORACLE value -> oracle.json
    SCOPE <in-contract vs carried-data (with the demonstrated in-scope subset, self-consistent with genInputs)
           vs out-of-contract>
+   ENVELOPE <ONE consumer-facing line — emit when the unit reproduces only a SUBSET of the original's input
+             surface, so a reuser knows it is NOT a general drop-in. State what it IS verified for and what is
+             explicitly OUT. e.g. "relative POSIX glob: * ** ? [] {} escapes, leading-!; OUT: extglobs, brace
+             ranges, Windows separators". The factory copies this verbatim into the package manifest + README.
+             Omit only when the unit faithfully reproduces the FULL original surface.>
    PROVENANCE <package@version, repo, license, source file>
 
 2. THE INPUT-GENERATOR (ES module):
