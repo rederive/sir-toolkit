@@ -12,11 +12,7 @@ Conforms to **SIR Schema v0.2** (`docs/SIR_SCHEMA.md`): `KIND STATE` with `{resu
 - `sir-factory-runner` — orchestrates a unit end-to-end: drives the `sir-factory` CLI + spawns the role agents, enforces the gates, quarantines what it can't soundly verify.
 
 **Skills** (`skills/`)
-- `decompose-contract` / `decompose-recipe` / `decompose-intent` / `decompose-site` — the capped-recursion decomposition family.
-- `write-oracle` · `discover-edge-cases` · `suggest-test-inputs` · `probe-boundary` — oracle construction + coverage.
-- `sir-verify` — drive `rdv` to verify / locally rebuild a bundle.
-
-**Commands** (`commands/`) — `synth` (synthesize a capability). *(More are project-specific and intentionally left out.)*
+- `sir-verify` — the verified-recompose loop as a tool: drives the `sir-factory` CLI (install → decompose → stamp → re-emit → grade → pack) and `rdv` (check / resynth) via the role agents. Holds the oracle-sourcing decision tree, the two-legs discipline (differential + quorum, non-substitutable), the off-fit-class guidance, and the grader-soundness checklist.
 
 ## Dependencies (shipped separately, NOT bundled)
 
@@ -29,7 +25,8 @@ Per the split decision, the heavy engines are their own CLIs the agents call out
 
 ## Status
 
-Structure, manifests, components, **engine split, and path wiring are done**:
+Structure, manifests, components, **engine split, path wiring, and cold-install hygiene are done**:
 1. ✅ **Paths de-hardcoded** — agent/skill prompts invoke the `sir-factory` CLI (a global command) + `rdv`, not monorepo paths.
 2. ✅ **`sir-factory` extracted** — its own zero-dep CLI ([github.com/rederive/sir-factory](https://github.com/rederive/sir-factory)), the canonical home of the orchestrator (the monorepo copy is retired).
-3. ☐ **Smoke test** — `/plugin marketplace add` → `install` → run `sir-factory-runner` on one fresh unit end-to-end (the remaining step).
+3. ✅ **Cold-install-clean** — `sir-verify` rewritten to drive only the shipped `sir-factory` + `rdv`; the misfiled semcom decomposition skills (LLVM-typed capability contracts) removed. The plugin is now SIR-recompose only: one skill (`sir-verify`) + the four role agents.
+4. ☐ **Smoke test** — `/plugin marketplace add` → `install` → run `sir-factory-runner` on one fresh unit end-to-end (the remaining step).
