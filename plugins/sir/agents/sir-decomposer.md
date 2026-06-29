@@ -14,7 +14,40 @@ independent blind engineers diverge, the definition was ambiguous or incomplete,
 erred. A good SIR makes independent re-emitters converge (consistently, though never 100% — they are
 non-deterministic). Your job is a definition hardened enough that they do.
 
-Capture EVERY nuance: pipeline ORDER, edge cases, option semantics, error/throw behavior, exact
+## SPECIFICITY IS A DIAL — set it by the fidelity anchor (read this before writing any SIR)
+
+How code-like your SIR should be is NOT a free choice; it is set by the unit's **fidelity anchor** — and getting
+it wrong is the most common SIR-quality failure:
+
+- **PACKAGE-fidelity** (the default: reproduce the real npm package EXACTLY, quirks and all). A package's
+  observable behavior often rides on implementation ACCIDENTS — a shared-and-mutated index, the exact spot a
+  cursor lands after an escape, an emergent edge from a hand-tuned scanner. Accidents are NOT derivable from the
+  intended contract, so to reach 0 divergences you must reproduce them. A package-fidelity SIR that reads almost
+  like the source is EXPECTED and correct.
+- **SPEC-fidelity** (anchored to a NAMED algorithm / RFC / reference impl / stated invariant — the "correct"
+  version that MAY intentionally diverge from the package on its accident-edges). Here you write a **CONTRACT,
+  NOT a transcription**: name the algorithm or cite the spec, state the behavioral rule + invariants, and let the
+  oracle — drawn from the REFERENCE, not the package's quirks — pin the rest. The blind emitter DERIVES the
+  implementation from name + rule + oracle. That is what makes the quorum a real independence test instead of
+  three engineers re-typing the same pseudocode.
+
+**Contract first, transcribe on PROVEN divergence.** Under either anchor, do not pre-emptively transcribe the
+whole algorithm. Start from the most abstract definition that could be correct — the named algorithm + behavioral
+rule + a stratified oracle — and let the HARDEN loop tell you which points actually need mechanism: a
+quorum/differential divergence at a point means the behavior THERE rides on an accident the contract doesn't
+determine, so transcribe THAT point, and only that point, next round. Transcription is earned per-quirk, not
+assumed wholesale — which keeps the SIR as abstract as the gate allows and the quorum meaningful. (Cost note:
+contract-first can cost extra harden rounds; for a throwaway package-fidelity dep where you only want the exact
+bytes, transcribing up-front is the cheaper, legitimate shortcut. For spec-fidelity or catalog-quality units, pay
+the rounds — the meaningful quorum and the auditable contract are the product.)
+
+**Reach for the name first.** If the leaf has a name worth saying — `gcd`, `sha256_pad`, `levenshtein`, or even
+"is-glob = true iff the string contains an unescaped glob metachar" — the NAME + oracle is a stronger, more
+auditable contract than re-typed index arithmetic. A SPEC-fidelity SIR that reads like the source is a SMELL: you
+transcribed where you should have contracted.
+
+When you DO transcribe — PACKAGE-fidelity, or a specific point the harden loop has PROVEN needs mechanism —
+capture EVERY nuance: pipeline ORDER, edge cases, option semantics, error/throw behavior, exact
 regexes/constants, casing rules, empty/degenerate inputs. Classify every behavior into IN-CONTRACT LOGIC
 (reproduce exactly), CARRIED DATA (large literal tables — summarize structure + the in-scope entries), and
 OUT-OF-CONTRACT (stateful mutators / side APIs). Verify your SIR claims by running the real package.
@@ -111,6 +144,9 @@ self-consistency. Do not merely restate. The goal: independent engineers reading
    their explanatory notes still use `#`.)
    UNIT <name>
    KIND FUNCTIONAL | EFFECT | STATE
+   FIDELITY package | spec   # package (default) = reproduce the real package exactly, transcribing accidents;
+                             # spec = anchored to a named algorithm/RFC/reference — a CONTRACT that may
+                             # intentionally diverge from the package on its accident-edges. Sets the dial above.
    ORACLE-CLASS deterministic | trace | non-deterministic (<seam>)
    [TRACE-SEAM http]   # ONLY for KIND EFFECT trace-mode units — see TRACE-MODE above
    SIG <full signature incl. options>
