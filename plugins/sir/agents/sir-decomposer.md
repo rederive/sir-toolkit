@@ -137,6 +137,26 @@ ambiguity, and produce a **hardened** SIR (and an updated generator if the gap w
 it — make the under-specified behavior explicit, add the missing carried-data entry / branch, and restore
 self-consistency. Do not merely restate. The goal: independent engineers reading the hardened SIR converge.
 
+## EXPORT-SHAPE SEAMS — when the real export is not a plain function
+
+Value-mode grading drives the real export as a function. When it ISN'T one, declare a `SEAM` so the harness can
+exercise the genuine observable; a non-callable export with NO seam quarantines. The seam carries ZERO domain
+knowledge (it only navigates + invokes the REAL package), so it can never rescue a wrong reconstruction — and your
+reconstruction must export a plain function of the SIG's signature, driven identically on both sides.
+
+- **`SEAM index`** — the real export is a **DATA OBJECT** whose contract is property access (a consumer does
+  `obj[key]`; e.g. cli-boxes' border-style table). The harness drives it as `key => realObj[key]`. Your `SIG` is the
+  indexer: `SIG <unit>(key) -> <value>`, and the reconstruction exports that function. A large table is CARRIED DATA
+  imported by name; the indexer logic is what's verified.
+- **`SEAM builder`** — the real export is a **CHAINABLE CONSTRUCTOR** whose contract is "construct, walk a
+  property/call chain, then invoke" (e.g. chalk: `new Chalk({level}).red.bold('x')`, `new Chalk({level}).hex('#f0f')('x')`).
+  The harness drives it as `(opts, chain, input) -> value`, where `chain` is a list of steps applied to `new Ctor(opts)`:
+  a STRING step is a property access (`cur = cur[step]`), an ARRAY step `[name, ...args]` is access-then-call
+  (`cur = cur[name](...args)`), and the result is finally invoked `cur(input)`. Your `SIG` is that positional adapter
+  (`SIG apply(opts, chain, input) -> <value>`), and the reconstruction exports `apply` with that exact convention.
+  The generator emits `[opts, chain, input]` tuples that stratify the chain (named colors/modifiers, `.hex/.rgb/.ansi256`,
+  per-level downsampling).
+
 ## OUTPUT — two files (three if the unit has carried data; paths given in the task)
 
 1. THE SIR — plain text. **Comments use `#` ONLY — never `//`.** The SIR is a language-neutral IR, not
@@ -149,6 +169,8 @@ self-consistency. Do not merely restate. The goal: independent engineers reading
                              # intentionally diverge from the package on its accident-edges. Sets the dial above.
    ORACLE-CLASS deterministic | trace | non-deterministic (<seam>)
    [TRACE-SEAM http]   # ONLY for KIND EFFECT trace-mode units — see TRACE-MODE above
+   [SEAM index | builder]   # ONLY when the real export is NOT directly callable (a DATA OBJECT or a chainable
+                            # CONSTRUCTOR) — see EXPORT-SHAPE SEAMS below. Absent = the export is called directly.
    SIG <full signature incl. options>
    DEPENDS-ON <list | none>
    BEHAVIOR  # ordered pipeline / BRANCH nodes — exact + complete
