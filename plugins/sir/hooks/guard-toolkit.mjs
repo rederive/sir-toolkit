@@ -7,7 +7,7 @@
 // On a genuine toolkit bug/limitation the agent must HALT and REPORT it (what failed, on which unit) or
 // QUARANTINE the unit — never patch the gate. (Edit/Write are blocked airtight here; Bash write-intent is
 // best-effort — the `chmod` seal in scripts/seal-toolkit.sh is the airtight backstop for the Bash path.)
-import { realpathSync, existsSync } from 'node:fs';
+import { realpathSync, existsSync, appendFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { dirname, resolve, sep } from 'node:path';
 
@@ -30,6 +30,12 @@ process.stdin.on('data', (c) => (buf += c)).on('end', () => {
   const tool = j.tool_name;
   const ti = j.tool_input || {};
   const deny = (reason) => {
+    // Optional audit trail: if a monitoring feed exists (UAT runs), record the blocked attempt so a read-only
+    // observer can see the guard fire (a denied tool never reaches PostToolUse). Silent in production (no feed).
+    try {
+      const FEED = '/Users/lanethompson/sir-lab/feed.jsonl';
+      if (existsSync(FEED)) appendFileSync(FEED, JSON.stringify({ ts: new Date().toISOString(), tool: 'GUARD-DENY:' + tool, brief: String(ti.file_path || ti.command || '').replace(/\s+/g, ' ').slice(0, 180) }) + '\n');
+    } catch { /* never block on audit failure */ }
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
     process.exit(0);
   };
