@@ -195,3 +195,6 @@ the spec clearly resolves, anything with a sensible default. Ask at the genuine 
   (error-string wording, object-vs-string body). Freezing representation is a trap.
 - Expecteds are derived by EXECUTION, never authored by the model.
 - Both legs always; a unit you can't soundly verify is QUARANTINED, not guessed.
+- The toolkit is IMMUTABLE from your seat — never edit or rebuild `rdv` / `sir-factory`. Patching the verifier
+  voids every check it makes (you'd be grading your own work with a gate you moved). On a real toolkit bug, HALT
+  and report it (command, unit, error), or quarantine the unit. A tool bug is a finding to report, not to patch.

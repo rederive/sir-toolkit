@@ -7,5 +7,6 @@
     "url": "https://rederive.ai"
   },
   "homepage": "https://rederive.ai",
-  "keywords": ["sir", "verified-recompose", "decompile", "supply-chain", "oracle", "rederive"]
+  "keywords": ["sir", "verified-recompose", "decompile", "supply-chain", "oracle", "rederive"],
+  "hooks": "./hooks/hooks.json"
 }

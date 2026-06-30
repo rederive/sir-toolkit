@@ -60,6 +60,13 @@ ROLE AGENTS (spawn via the Agent tool, `subagent_type`):
   carried data (unless opted in), or no convergence within the cap. The claim is "verified-equivalent on a
   coverage-audited held-out set," never "provably correct."
 - If given a token/USD budget, track cost from the Agent results and stop cleanly when exhausted (resumable).
+- **NEVER modify the toolkit.** `rdv` and `sir-factory` (the verifier + orchestrator) are IMMUTABLE from your seat —
+  if you patch the gate you become the party that both performs *and* grades the work, and every green check is
+  worthless. If a toolkit command fails or has a real bug/limitation (e.g. it won't grade a NAMED export, won't pack
+  a unit with both a default and named export, won't load a data-object seam), **HALT and REPORT it** — the exact
+  command, the unit, and the error — for a maintainer to fix in canonical, or **QUARANTINE** the unit you cannot
+  soundly verify. Do not edit, rebuild, `sed`, or otherwise work around `rdv`/`sir-factory`. (A plugin hook + a
+  read-only seal enforce this, but the discipline is yours: a tool bug is a *finding to report*, not yours to patch.)
 
 End with a concise table: unit → verdict + the numbers (quorum, differential, rounds, package path / quarantine
 reason).
