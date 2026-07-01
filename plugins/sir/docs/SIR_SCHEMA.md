@@ -1,7 +1,12 @@
-# SIR Schema — v0.1 FROZEN (2026-06-10) + v0.2 additions (2026-06-26)
+# SIR Schema — v0.1 FROZEN (2026-06-10) + v0.2 additions (2026-06-26) + v0.3 additions (2026-07-01)
 
-> v0.2 (§§11–14, at the bottom) adds `KIND STATE`, fidelity variants, decision-table fidelity, and a
-> `specVersion`'d bundle. v0.1 below is unchanged. **Generation now targets v0.2.**
+> **Canonical home: [github.com/rederive/sir-spec](https://github.com/rederive/sir-spec).** This copy ships with
+> the plugin and is kept in sync.
+>
+> v0.2 (§§11–14) adds `KIND STATE`, fidelity variants, decision-table fidelity, and a `specVersion`'d bundle.
+> v0.3 (§§15–18, at the bottom) codifies four features already implemented in `sir-factory` + `rdv`:
+> `ORACLE-CLASS`/`TRACE-SEAM`, export-shape `SEAM`s, the `ENVELOPE`, and carried-data authority attestation.
+> Earlier sections are unchanged. **Generation now targets v0.3.**
 
 ---
 
@@ -290,3 +295,113 @@ units[].variants = {                          # OPTIONAL; absence ⇒ implicit s
 - `spec`-variant *anchoring mechanism* for cross-language reference oracles (boto3 for `aws4`) — design only.
 - `rdv add --fidelity <variant>` install-time selection — gated on the `rdv` installer existing.
 - Promote `STATE` substructure (which arg is mutated) from oracle-carried to skeleton, IF a specimen forces it.
+
+---
+
+# SIR Schema v0.3 — additions (2026-07-01)
+
+Builds on v0.1 + v0.2 (frozen, above; unchanged). **New evidence:** the three cold-agent UATs (`del` 2026-06-29,
+`boxen` 2026-06-29, `query-string` 2026-06-30) and `@rederive/request`'s trace unit shipping in the OSS `rdv`.
+Every addition here **codifies machinery already implemented** in `sir-factory` and `rdv` and exercised by shipped
+bundles — v0.3 closes the gap between the practiced schema and the written one. Each cites the specimen that
+forced it; nothing is resolved from taste.
+
+## 15. Forced addition 7 — `ORACLE-CLASS` + `TRACE-SEAM`: an effect unit declares its injectable boundary
+
+```
+ORACLE-CLASS deterministic | trace | non-deterministic (<seam>)
+TRACE-SEAM   <domain>                     # ONLY for trace-mode units: the injected boundary's domain (§7 set)
+```
+
+- `deterministic` → value-mode oracle (the default; pure function of its arguments).
+- `trace` → the unit performs an EFFECT across an **injectable** boundary. It is stamped under a scripted fake
+  boundary and its oracle records `{emitted, result}` — the ordered EMIT/REQUEST trace (§5 semantics) plus the
+  final value. `TRACE-SEAM` names the domain so the harness knows which fake to build; the injected-boundary
+  adapters live **in the verifier** (`rdv`), never in the package — a trust-nothing consumer must not run
+  publisher-shipped harness code to check publisher code.
+- `non-deterministic` with **no** injectable seam → **QUARANTINE**. The factory refuses to stamp a value-mode
+  oracle for it; declaring `TRACE-SEAM` on a boundary that cannot actually be injected is a decomposer error.
+
+*Evidence:* `@rederive/request`'s `httpRequest` (a `net` seam — ordered EMIT + injected response, record/replay
+verified by the OSS CLI); chalk's `supports-color` ambient read (`env`/`tty`), injected as a collaborator in the
+boxen run so the styling logic above the seam is value-verifiable.
+
+## 16. Forced addition 8 — `SEAM`: export-shape adapters for non-callable exports
+
+```
+SEAM index | builder                      # OPTIONAL; absent ⇒ the export is invoked directly as a function
+```
+
+Value-mode grading drives the real export as a function. Real packages also ship two non-callable shapes:
+
+- `index` — the export is a **pure data object** whose observable contract is property access (a consumer does
+  `obj[key]`). The harness drives both sides as `key => obj[key]`.
+- `builder` — the export is a **chainable constructor**: construct, walk a property/call chain, invoke. The
+  harness drives both sides as `(opts, chain, input)`, where a string step is a property access and an
+  `[name, ...args]` step is an access-then-call.
+
+A seam adapter contains **zero domain knowledge** — it only navigates and invokes the *real* package, so it can
+never rescue a wrong reconstruction. A non-callable export with no declared `SEAM` **quarantines** (the default
+stays refuse-don't-guess). The reconstruction must export a plain function of the seam's calling convention; the
+`SIG` line pins it.
+
+*Evidence:* the boxen UAT — `cli-boxes` (a border-glyph table; property access *is* the contract) and `chalk`
+(a default instance plus named `Chalk`; `new Chalk({level}).red.bold(x)`, `.hex('#f0f')(x)`). The gap was serious
+enough that a cold agent, blocked by it, patched the toolkit to pass its own work — codifying the seam removes
+the trigger; the immutability guardrail removes the capability.
+
+## 17. Forced addition 9 — `ENVELOPE`: the verified input scope is part of the contract
+
+```
+ENVELOPE <one-line input scope>           # the input domain this unit is verified FOR
+```
+
+Verification is **evidence within an input distribution**, not a universal proof. When a unit is verified for a
+subset of its potential domain, the envelope says so, and a consumer reusing it outside that scope knows they are
+off the verified map. `pack` carries the envelope into the manifest and README; `rdv check` displays it. Absent
+⇒ the unit claims its full documented signature domain. Together with §12's `FIDELITY`/`VARIANT` line, the
+envelope makes a bundle state exactly *what was proven, against what anchor, over which inputs*.
+
+*Evidence:* the del UAT (finding F5) — a glob engine verified against one project's pattern classes was correct
+but **over-claiming** as a general drop-in; the envelope is the honest boundary. Same mechanism labels every
+`spec`-fidelity divergence scope (the color-string percent correction).
+
+## 18. Forced addition 10 — carried data: byte-exact extraction + an independent authority
+
+```
+CARRIED   <name> FROM <source-ref>        # extracted byte-exact by the TOOLCHAIN, never transcribed by a model
+AUTHORITY { expr, equals }…               # re-runnable assertions anchoring the data to a PUBLISHED standard
+```
+
+Version-dependent tables (Unicode ranges, glyph charts, name→value maps) are **copied mechanically** at build
+time (comment-safe const extraction; JSON sources parsed, not eval'd), content-hashed, and shipped as a data
+module the reconstruction imports — a model never reproduces a 1,024-entry table from memory. Trust in carried
+data comes from three independent legs:
+
+1. the **oracle** exercises it (wrong data fails behavior);
+2. the **content hash** pins it (any byte change is caught);
+3. **authority assertions** check it against an *independent published standard* — UAX #11 for east-asian
+   widths, the Unicode box-drawing chart for `cli-boxes` — not the source package's own bytes.
+
+No assertions ⇒ **unattested** ⇒ the gate refuses by default. `rdv check` re-runs the authority assertions at
+verify time, so a consumer re-verifies the attestation itself, not merely the hash.
+
+*Evidence:* the boxen UAT — `get-east-asian-width`'s ranges and `cli-boxes`' glyph table (the terminal-stack
+profile is carried-data-heavy); plus the extraction hardening the run forced (comments inside source literals,
+pure-JSON sources).
+
+## Bundle contract v0.3
+
+`manifest.specVersion = "0.3"`. **Back-compat:** v0.2 bundles remain valid unchanged — every v0.3 field is
+optional, and absence means the safe default (`ORACLE-CLASS deterministic`, direct-call export, full-signature
+envelope, no carried data). `rdv` asserts `specVersion` compatibility per §14.
+
+---
+
+## Deferred (v0.3)
+
+- `rdv normalize` (Mode 2, behavior-lock against a retained original) as a shipped one-command workflow — the
+  method is validated on real modules; the command is not yet a product surface.
+- A carried-data authority *registry* (named standards → canonical assertion sets), so common tables (UAX #11,
+  box-drawing) attach attestations by reference.
+- `PAR` verification semantics — still no forcing specimen (§5 flag stands).
