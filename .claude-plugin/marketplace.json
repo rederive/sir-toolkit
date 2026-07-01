@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "sir",
-      "description": "SIR verified-recompose toolkit (SIR Schema v0.2): the sir-verify skill and the sir-decomposer / sir-reemitter(-cr) / sir-factory-runner agents. Drives the `sir-factory` CLI to build bundles and `rdv` to verify them (both shipped as dependencies, not bundled).",
+      "description": "SIR verified-recompose toolkit (SIR Schema v0.4): the sir-verify skill and the sir-decomposer / sir-reemitter(-cr) / sir-factory-runner agents. Drives the `sir-factory` CLI to build bundles and `rdv` to verify them (both shipped as dependencies, not bundled).",
       "author": { "name": "rederive", "url": "https://rederive.ai" },
       "category": "development",
       "source": "./plugins/sir",
