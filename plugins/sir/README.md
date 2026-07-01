@@ -2,7 +2,7 @@
 
 Decompile a package into a **verified, self-contained re-implementation**. A *sighted* decomposer reads the source once and emits a SIR (a `KIND`-discriminated behavior tree) plus a held-out oracle; *N blind clean-room* emitters reconstruct the unit from that contract alone (original deleted); two gates decide — a **held-out quorum** (≥2 independent emitters pass the full held-out set) and a **saturation differential** (the winner vs the real package, N=400). The verified bundle ships its *contract*, not trusted bytes; a consumer re-verifies with `rdv` or rebuilds locally.
 
-Conforms to **SIR Schema v0.2** (`docs/SIR_SCHEMA.md`): `KIND STATE` with `{result, post}` observation, fidelity variants (`package` vs `spec`), decision-table fidelity, and `specVersion`'d bundles.
+Conforms to **SIR Schema v0.4** (`docs/SIR_SCHEMA.md`): `KIND STATE` with `{result, post}` observation, fidelity variants (`package` vs `spec`), decision-table fidelity, and `specVersion`'d bundles.
 
 ## Components
 

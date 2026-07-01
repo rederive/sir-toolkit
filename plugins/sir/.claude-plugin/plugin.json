@@ -1,12 +1,19 @@
 {
   "name": "sir",
-  "version": "0.2.0",
-  "description": "SIR verified-recompose toolkit — the sighted-decompose / blind-re-emit / dual-gate (held-out quorum + saturation differential) methodology, SIR Schema v0.2. The `sir-verify` skill + role agents (sir-decomposer / sir-reemitter(-cr) / sir-factory-runner) that drive the `sir-factory` CLI and verify with `rdv`.",
+  "version": "0.3.0",
+  "description": "SIR verified-recompose toolkit — the sighted-decompose / blind-re-emit / dual-gate (held-out quorum + saturation differential) methodology, SIR Schema v0.4. The `sir-verify` skill + role agents (sir-decomposer / sir-reemitter(-cr) / sir-factory-runner) that drive the `sir-factory` CLI and verify with `rdv`.",
   "author": {
     "name": "rederive",
     "url": "https://rederive.ai"
   },
   "homepage": "https://rederive.ai",
-  "keywords": ["sir", "verified-recompose", "decompile", "supply-chain", "oracle", "rederive"],
+  "keywords": [
+    "sir",
+    "verified-recompose",
+    "decompile",
+    "supply-chain",
+    "oracle",
+    "rederive"
+  ],
   "hooks": "./hooks/hooks.json"
 }
