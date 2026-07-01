@@ -3,10 +3,12 @@ name: preflight
 description: >
   Rederive PREFLIGHT — build a MEASURED-strong characterization oracle for untested (or weakly-tested) source,
   so the rederive/migration path has a trustworthy source of truth. Use this BEFORE decompose→re-emit→verify
-  whenever the unit you want to port has zero tests or only happy-path tests. Generates coverage-targeted inputs,
-  hardens them with an adversarial "pedantic senior engineer" pass AND mechanical mutation testing, runs the REAL
-  source to capture input→output vectors (the golden master / oracle), and gates on a measured mutation score —
-  quarantining what it cannot soundly characterize. Turns "I have the ick about these tests" into a number.
+  whenever the unit you want to port has zero tests or only happy-path tests. Four passes: structural COVERAGE + an
+  adversarial "pedantic senior engineer" REVIEW (the reasoning passes, for known-unknowns) + mechanical MUTATION
+  testing + an out-of-domain CHAOS / property-based pass (the execution passes, for the unknown-unknowns). Runs the
+  REAL source to capture input→output vectors (the golden master / oracle), gates on a measured mutation score plus a
+  characterized garbage-input surface, and quarantines what it cannot soundly characterize. Turns "I have the ick
+  about these tests" into a number.
 ---
 
 # Rederive Preflight — characterization-oracle generation
@@ -23,17 +25,35 @@ implementations that get the behavior wrong**. Flip that onto test-building: a s
 version of the function would **fail** it. So the preflight doesn't ask "did my tests pass?" — it asks **"what wrong
 implementations would slip through, and where?"** and closes those holes until (almost) none can.
 
-Two complementary adversaries attack the oracle, and you need both:
+### Reasoning vs. execution — why you need all four passes
 
-- **Mechanical mutation** (Stryker et al.) — local, syntactic perturbations: flip `<`→`<=`, `+`→`-`, drop a branch,
-  swap a constant. Finds where the suite is blind to small **code** changes (untested branch directions, boundaries).
-  Cheap, exhaustive, mechanical.
-- **The Pedantic Senior Engineer** (adversarial persona) — global, semantic. Reasons about the *domain*: leap years,
-  timezone edges, empty-but-not-null, unicode normalization, numeric precision, two parameters that interact. Finds
-  whole **classes of input** a mutation operator never produces, because they're about the *problem*, not the code.
+The passes split along one deep axis: **two reason about inputs, two execute to find what reasoning missed.**
 
-Mutation catches "you didn't test both directions of this branch." The pedant catches "you didn't consider this
-entire kind of input." Run both; they cover each other's blind spots.
+- **Reasoning passes** find *known-unknowns* — edges a mind can enumerate:
+  - **Coverage** (structural) — inputs derived from the code's branches/boundaries.
+  - **The Pedantic Senior Engineer** (semantic) — domain edges: leap years, timezone/DST, unicode normalization,
+    numeric precision, two params that interact. Also asks *"WTF even is this test?"* — critiquing whether each test
+    is well-formed and asserts something meaningful.
+- **Execution passes** find *unknown-unknowns* — what reasoning can't foresee, surfaced only by running things:
+  - **Mechanical mutation** (Stryker et al.) — perturbs the *code* (`<`→`<=`, `+`→`-`, drop a branch) and finds where
+    the suite is blind to a real change. Answers "would a wrong version slip through, and where?"
+  - **Chaos** (property-based / fuzzing) — throws *out-of-domain, absurd* inputs at the function ("BACON" into a color
+    parser; emoji into a number; a 10 MB string into a name; null bytes; nested garbage) and captures what the real
+    code *does*. Answers "what happens at inputs no one designed for?"
+
+Mutation catches "you didn't test both directions of this branch." The pedant catches "you didn't consider this class
+of input." Chaos catches "you never imagined *this* input at all." The pedant has a ceiling — subtleties are
+unknown-unknowns, and you don't *think* your way to them, you *throw things* and watch. Run all four; they cover each
+other's blind spots. It's "execute, don't review; never let a belief grade itself" applied to the test suite.
+
+### Why chaos matters most for 1-to-1
+
+Garbage-input behavior — error handling, silent coercion, defaults, what "BACON" actually returns — is **exactly where
+ports drift, and it's user-facing** (the first weird thing a real user types). Coverage and the pedant won't generate
+it; only chaos will. The golden master pins what the source *actually does* with nonsense (throws? null? black?), and
+the port must reproduce it exactly. The property-based generators do double duty here: the same generator that fuzzes
+the source for capture can **drive the cross-implementation differential** — generate wild inputs, assert
+`source_output ≡ port_output` — which is your 1-to-1 proof on the garbage surface.
 
 ## The loop (per unit)
 
@@ -59,10 +79,18 @@ entire kind of input." Run both; they cover each other's blind spots.
    written reason). Re-run. Iterate until the mutation score clears the threshold or the only survivors are
    justified-equivalent.
 
-6. **Emit + gate.** Output the `vectors.json` oracle **and a confidence report** (branch coverage, mutation score,
-   surviving-mutant list with triage). **Gate:** do not hand a unit to the migration unless it clears the bar
-   (default: branch coverage complete AND mutation score ≥ 90% AND no un-triaged survivors). A unit you cannot
-   soundly characterize is **QUARANTINED**, not shipped with a weak oracle — same discipline as the factory.
+6. **Chaos pass.** Fuzz the source with out-of-domain, absurd, type-violating inputs — property-based generators
+   (fast-check / FsCheck / Hypothesis) plus deliberately nonsensical values ("BACON" into a color parser, emoji into
+   a number, a 10 MB string, null bytes, nested garbage). Capture what the REAL code *does* with each (throws / null /
+   default / silent coercion): that garbage-behavior surface is part of the contract and the prime spot for a port to
+   drift. Fold these vectors into the oracle and **re-run mutation** so they count. The same generator can drive the
+   later source≡port differential directly.
+
+7. **Emit + gate.** Output the `vectors.json` oracle **and a confidence report** (branch coverage, mutation score,
+   surviving-mutant list with triage, chaos-surface captured). **Gate:** do not hand a unit to the migration unless it
+   clears the bar (default: branch coverage complete AND mutation score ≥ 90% AND no un-triaged survivors AND the
+   garbage/undefined-input surface characterized). A unit you cannot soundly characterize is **QUARANTINED**, not
+   shipped with a weak oracle — same discipline as the factory.
 
 ## The Pedantic Senior Engineer — the checklist
 
@@ -94,12 +122,17 @@ gets a value oracle; genuinely effectful boundaries get a trace oracle. If neith
 The generative steps (input gen, pedant pass, survivor→new-input) are yours; the deterministic steps (compile, run,
 capture, mutate, measure) call the language's native tooling via Bash:
 
-- **.NET / C#:** capture with a small `dotnet run` harness (below); mutation with **`dotnet-stryker`**
-  (`dotnet stryker`, `--since:<ref>` to scope to a change's blast radius); coverage with **coverlet**. Needs the
-  **SDK** (not just the runtime) on the capture machine — if `dotnet --info` shows no SDKs, run the preflight where
-  one exists and ship the resulting `vectors.json`.
-- **JS / TS:** capture with a node harness; mutation with **StrykerJS**; coverage with **c8**/**nyc**.
-- **General:** any runner that can (a) execute the source over inputs and (b) mutation-test it works.
+Each pass maps to native tooling — coverage, **mutation** (the mechanical grader), and **property-based/chaos** (the
+out-of-domain generator):
+- **.NET / C#:** capture with a small `dotnet run` harness (below); coverage **coverlet**; mutation **`dotnet-stryker`**
+  (`dotnet stryker`, `--since:<ref>` to scope to a change's blast radius); chaos **FsCheck** (or CsCheck). Needs the
+  **SDK** (not just the runtime) on the capture machine — if `dotnet --info` shows no SDKs, run the preflight where one
+  exists and ship the resulting `vectors.json`.
+- **JS / TS:** capture with a node harness; coverage **c8**/**nyc**; mutation **StrykerJS**; chaos **fast-check**.
+- **Python:** capture with a runner harness; coverage **coverage.py**; mutation **mutmut** (or cosmic-ray); chaos
+  **Hypothesis**.
+- **General:** any runner that can (a) execute the source over inputs, (b) mutation-test the code, and (c) fuzz it with
+  a property-based generator.
 
 ### .NET capture harness (template)
 
@@ -135,7 +168,8 @@ When it can't clear the bar, it says so and quarantines, rather than shipping fa
 
 ## TL;DR
 
-Analyze → generate coverage-targeted inputs → **pedant pass** (semantic edges) → run the real source to capture the
-golden master → **mutation-saturate** (kill survivors) → emit `vectors.json` + a mutation-score report → gate, or
-quarantine. Then hand the oracle to `sir-verify`. The suite earns its green by rejecting wrong implementations, not by
-passing the happy path.
+Analyze → **coverage** inputs (structural) → **pedant** pass (semantic edges + "WTF is this test?") → capture the
+golden master from the real source → **mutation-saturate** (kill survivors) → **chaos** pass (fuzz the garbage surface,
+capture what it does) → emit `vectors.json` + a confidence report → gate, or quarantine. Two reasoning passes for the
+known-unknowns, two execution passes for the unknown-unknowns. The suite earns its green by rejecting wrong
+implementations, not by passing the happy path. Then hand the oracle to `sir-verify`.
