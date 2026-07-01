@@ -7,18 +7,39 @@
 // On a genuine toolkit bug/limitation the agent must HALT and REPORT it (what failed, on which unit) or
 // QUARANTINE the unit — never patch the gate. (Edit/Write are blocked airtight here; Bash write-intent is
 // best-effort — the `chmod` seal in scripts/seal-toolkit.sh is the airtight backstop for the Bash path.)
-import { realpathSync, existsSync, appendFileSync } from 'node:fs';
+import { realpathSync, existsSync, appendFileSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { dirname, resolve, sep } from 'node:path';
 
-// Resolve the toolkit package roots from the `rdv` and `sir-factory` commands on PATH (covers both the
-// installed bins and, when they symlink to dev source, the source repos).
+// Resolve the toolkit package roots from the `rdv` and `sir-factory` commands on PATH. Resolution is
+// DELIBERATELY conservative and fails SAFE (block nothing) rather than loud (block everything): it only
+// accepts a package.json that IS the toolkit (matched by name), walks PAST unrelated package.json files
+// (a project's, a monorepo root's, a stray ~/package.json), and never accepts an over-broad root ($HOME,
+// `/`, or any ancestor of $HOME). If it cannot confidently locate the toolkit, it returns null and the hook
+// allows the edit. (The chmod seal remains the airtight backstop; this hook is best-effort by design.)
+const HOME = process.env.HOME || '';
+const TOOLKIT_NAMES = new Set(['rederive', 'rdv', '@rederive/rdv', 'sir-factory', 'sir-toolkit']);
+// A toolkit root must be a SPECIFIC package directory — never home, filesystem root, or an ancestor of home.
+function isSafeRoot(root) {
+  if (!root || root === '/' || root === HOME) return false;
+  if (HOME && (HOME + sep).startsWith(root + sep)) return false; // root is $HOME or an ancestor of it
+  return true;
+}
 function pkgRoot(bin) {
   try {
     const p = execSync(`command -v ${bin} 2>/dev/null`, { encoding: 'utf8' }).trim();
     if (!p) return null;
     let d = dirname(realpathSync(p));
-    for (let i = 0; i < 10 && d !== '/'; i++) { if (existsSync(`${d}/package.json`)) return realpathSync(d); d = dirname(d); }
+    for (let i = 0; i < 12 && d !== '/'; i++) {
+      const pj = `${d}/package.json`;
+      if (existsSync(pj)) {
+        let name = '';
+        try { name = JSON.parse(readFileSync(pj, 'utf8')).name || ''; } catch {}
+        if (TOOLKIT_NAMES.has(name)) { const root = realpathSync(d); return isSafeRoot(root) ? root : null; }
+        // a NON-toolkit package.json (project / monorepo / home): do NOT stop here — keep walking up.
+      }
+      d = dirname(d);
+    }
   } catch {}
   return null;
 }
