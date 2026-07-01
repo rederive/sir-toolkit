@@ -1,12 +1,16 @@
-# SIR Schema — v0.1 FROZEN (2026-06-10) + v0.2 additions (2026-06-26) + v0.3 additions (2026-07-01)
+# SIR Schema — v0.1 FROZEN (2026-06-10) · v0.2 (2026-06-26) · v0.3 + v0.4 (2026-07-01)
 
 > **Canonical home: [github.com/rederive/sir-spec](https://github.com/rederive/sir-spec).** This copy ships with
 > the plugin and is kept in sync.
 >
 > v0.2 (§§11–14) adds `KIND STATE`, fidelity variants, decision-table fidelity, and a `specVersion`'d bundle.
-> v0.3 (§§15–18, at the bottom) codifies four features already implemented in `sir-factory` + `rdv`:
-> `ORACLE-CLASS`/`TRACE-SEAM`, export-shape `SEAM`s, the `ENVELOPE`, and carried-data authority attestation.
-> Earlier sections are unchanged. **Generation now targets v0.3.**
+> v0.3 (§§15–18) codifies four features already implemented in `sir-factory` + `rdv`: `ORACLE-CLASS`/`TRACE-SEAM`,
+> export-shape `SEAM`s, the `ENVELOPE`, and carried-data authority attestation.
+> v0.4 (§§19–22) is the **concurrency layer** — validated `PAR` semantics, the scheduler control effect + virtual
+> time, the resource-lifecycle oracle channel, and the token `RING` — consolidated from the verified-normalization
+> lineage in the **2026-07-01 unification** (see the note at §19; those sections were previously published in the
+> site spec under the colliding numbers "v0.2/v0.3 (2026-06-22)" and are renumbered here — no shipped bundle pins
+> that numbering). Earlier sections are unchanged. **Generation now targets v0.4.**
 
 ---
 
@@ -404,4 +408,82 @@ envelope, no carried data). `rdv` asserts `specVersion` compatibility per §14.
   method is validated on real modules; the command is not yet a product surface.
 - A carried-data authority *registry* (named standards → canonical assertion sets), so common tables (UAX #11,
   box-drawing) attach attestations by reference.
-- `PAR` verification semantics — still no forcing specimen (§5 flag stands).
+
+---
+
+# SIR Schema v0.4 — the concurrency layer (2026-07-01, the unification)
+
+**Provenance note.** The four sections below were developed and validated on the **verified-normalization**
+lineage (Mode 2: behavior-lock against a retained original) and previously published in the site spec under
+version numbers ("v0.2" and "v0.3", 2026-06-22) that collided with §§11–18's numbering — the two documents
+evolved on parallel workstreams. This unification renumbers them as **v0.4**; the artifact lineage (§14's
+`specVersion`, which shipped bundles actually pin) is unchanged. Evidence base: `p-map`, `q`'s timer/microtask
+core, a two-account transfer, `request`'s redirect state machine (256/256 generated + held-out scenarios), and
+`ringbuf.js`. Nothing here is resolved from taste.
+
+## 19. `PAR` verification semantics — VALIDATED (closes the §5 flag)
+
+v0.1 §5 froze `PAR { … }` as design with an explicit UNVALIDATED flag. The flag closes:
+
+- **Commuting sub-traces** (touch no shared state — order observationally irrelevant): the canonical form is the
+  **sorted multiset** of sub-traces; verification collapses to one representative.
+- **Dependent sub-traces** (a shared resource — order changes the observable): sorting is **unsound**. The unit is
+  verified **over the space of interleavings** against the retained reference's reachable-**outcome set** plus
+  invariants (safety, ordering, conservation), with the message-delivery order injected as a boundary the harness
+  owns.
+- **Coverage ladder**, reported honestly: `exhaustive` (small inputs — proven over all interleavings) →
+  `sampled` (coverage-counted, when the space explodes) → `partial-order reduction` (one representative per
+  equivalence class of independent reorderings — cheap exactly when the unit is correctly order-independent,
+  thorough exactly when a refactor is not).
+
+*Evidence:* `p-map`'s concurrency contract (interleaving-invariant output + a max-concurrency bound) verified
+exhaustively for small inputs and POR-scaled past 10¹² interleavings; a two-account transfer whose outcome IS
+interleaving-dependent; `request`'s redirect state machine.
+
+## 20. The scheduler is a control effect — timer races verify on virtual time
+
+A clock **read** (`REQUEST time.now`) is a point read, injected like any inbound value. **Scheduling** is a
+different thing: timers (`time.timer` — setTimer/clearTimer) and the microtask scheduler are a **control
+effect** that decides *when deferred work runs relative to everything else*. A timer race (does the timeout
+fire before the awaited reply settles?) is nondeterministic on the wall clock, so it is verified on **virtual
+time**: the event loop is injected as a scheduler the harness drives (`schedule` for microtasks;
+`setTimer`/`clearTimer`/`advance` for timers), making resolution order a deterministic, replayable function of
+the timeline.
+
+*Evidence:* `q`'s `delay`/`timeout` and its microtask core.
+
+## 21. The resource-lifecycle oracle channel
+
+Cancellation is **invisible to the value/trace channels**: a leaked timer still fires, but its effect is a no-op
+on already-settled state, so the emit/reply sequence is byte-identical while a real resource leak goes uncaught.
+A unit that arms cancellable resources therefore carries a third oracle channel asserting the **lifecycle**:
+`armed / fired / cancelled` for timers, `subscribed / torn-down` for handles — timers cleared, handles closed.
+
+*Evidence:* `request`'s redirect timeout — a dropped `clearTimer` passes value + order and is caught **only** on
+the lifecycle channel.
+
+## 22. `RING` — token-coordinated concurrency reduces to a deterministic schedule
+
+When a unit coordinates through a **single circulating permission** — only the token-holder acts — the
+interleaving space collapses to a deterministic schedule (one outcome per token order; fixed-rotation is one
+schedule, verified in O(1)). RING is the **design-time dual of partial-order reduction**: POR *detects*
+independence to shrink the space; a ring *imposes* coordination to shrink it. A ring is a behavior
+**refinement** — `R_ring ⊆ R_free` always (every ring run is a valid free run: it can only drop outcomes, never
+invent one). The decomposer may **recognize** a ring (and verify `R_ring = R_free`, i.e. behavior-preserving) or
+**impose** one as a deliberate, documented refinement during normalization.
+
+*Evidence:* `ringbuf.js`.
+
+## Bundle contract v0.4
+
+`manifest.specVersion = "0.4"`. **Back-compat:** v0.2/v0.3 bundles remain valid unchanged — the v0.4 sections
+only add semantics for concurrent/scheduled/cancellable units; absence means none apply. `rdv` asserts
+`specVersion` compatibility per §14.
+
+---
+
+## Deferred (v0.4)
+
+- Transactions / compensation and multi-process effects (carried forward from v0.1).
+- The `ui` domain verbs (carried forward).
+- Cross-language `spec`-variant anchors (carried forward from v0.2's deferred list).
