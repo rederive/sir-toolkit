@@ -54,6 +54,15 @@ function pkgRoot(bin) {
 }
 const roots = [...new Set(['rdv', 'sir-factory'].map(pkgRoot).filter(Boolean))];
 
+// Optional audit trail — set SIR_GUARD_AUDIT_LOG=/path/to/log.jsonl to record denials + maintenance bypasses.
+// Off by default (no path is baked in). Silent + never throws.
+function audit(tool, brief) {
+  try {
+    const f = process.env.SIR_GUARD_AUDIT_LOG;
+    if (f) appendFileSync(f, JSON.stringify({ ts: new Date().toISOString(), tool, brief: String(brief || '').replace(/\s+/g, ' ').slice(0, 180) }) + '\n');
+  } catch { /* never block on audit failure */ }
+}
+
 let buf = '';
 process.stdin.on('data', (c) => (buf += c)).on('end', () => {
   let j = {}; try { j = JSON.parse(buf); } catch {}
@@ -61,19 +70,13 @@ process.stdin.on('data', (c) => (buf += c)).on('end', () => {
   const ti = j.tool_input || {};
   // Sanctioned maintenance window (human-authorized)? Allow everything, but leave an audit trail.
   if (maintenanceWindowOpen()) {
-    try {
-      const FEED = '/Users/lanethompson/sir-lab/feed.jsonl';
-      if (existsSync(FEED)) appendFileSync(FEED, JSON.stringify({ ts: new Date().toISOString(), tool: 'GUARD-BYPASS(maintenance):' + tool, brief: String(ti.file_path || ti.command || '').replace(/\s+/g, ' ').slice(0, 120) }) + '\n');
-    } catch { /* never block on audit failure */ }
+    audit('GUARD-BYPASS(maintenance):' + tool, ti.file_path || ti.command);
     process.exit(0);
   }
   const deny = (reason) => {
-    // Optional audit trail: if a monitoring feed exists (UAT runs), record the blocked attempt so a read-only
-    // observer can see the guard fire (a denied tool never reaches PostToolUse). Silent in production (no feed).
-    try {
-      const FEED = '/Users/lanethompson/sir-lab/feed.jsonl';
-      if (existsSync(FEED)) appendFileSync(FEED, JSON.stringify({ ts: new Date().toISOString(), tool: 'GUARD-DENY:' + tool, brief: String(ti.file_path || ti.command || '').replace(/\s+/g, ' ').slice(0, 180) }) + '\n');
-    } catch { /* never block on audit failure */ }
+    // Optional audit trail (set SIR_GUARD_AUDIT_LOG): a denied tool never reaches PostToolUse, so this is the
+    // only place a read-only observer can see the guard fire.
+    audit('GUARD-DENY:' + tool, ti.file_path || ti.command);
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } }));
     process.exit(0);
   };
