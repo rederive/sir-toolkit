@@ -25,6 +25,15 @@ function isSafeRoot(root) {
   if (HOME && (HOME + sep).startsWith(root + sep)) return false; // root is $HOME or an ancestor of it
   return true;
 }
+// MAINTAINER OVERRIDE — a HUMAN deliberately opens a maintenance window to fix the toolkit ITSELF (rdv/sir-factory).
+// OFF by default. Open it either way (both read LIVE per tool-call, so it works mid-session with no restart):
+//   • `export SIR_ALLOW_TOOLKIT_EDITS=1` in the environment that launched Claude Code, or
+//   • create the marker file:  `touch ~/.sir-allow-toolkit-edits`   (remove it to close the window).
+// This is the SANCTIONED path for editing the toolkit. An agent must NEVER open it itself without explicit human
+// authorization — opening the window is the owner's decision, exactly like lifting the chmod seal. Uses are audited.
+function maintenanceWindowOpen() {
+  try { return process.env.SIR_ALLOW_TOOLKIT_EDITS === '1' || existsSync(`${HOME}/.sir-allow-toolkit-edits`); } catch { return false; }
+}
 function pkgRoot(bin) {
   try {
     const p = execSync(`command -v ${bin} 2>/dev/null`, { encoding: 'utf8' }).trim();
@@ -50,6 +59,14 @@ process.stdin.on('data', (c) => (buf += c)).on('end', () => {
   let j = {}; try { j = JSON.parse(buf); } catch {}
   const tool = j.tool_name;
   const ti = j.tool_input || {};
+  // Sanctioned maintenance window (human-authorized)? Allow everything, but leave an audit trail.
+  if (maintenanceWindowOpen()) {
+    try {
+      const FEED = '/Users/lanethompson/sir-lab/feed.jsonl';
+      if (existsSync(FEED)) appendFileSync(FEED, JSON.stringify({ ts: new Date().toISOString(), tool: 'GUARD-BYPASS(maintenance):' + tool, brief: String(ti.file_path || ti.command || '').replace(/\s+/g, ' ').slice(0, 120) }) + '\n');
+    } catch { /* never block on audit failure */ }
+    process.exit(0);
+  }
   const deny = (reason) => {
     // Optional audit trail: if a monitoring feed exists (UAT runs), record the blocked attempt so a read-only
     // observer can see the guard fire (a denied tool never reaches PostToolUse). Silent in production (no feed).
