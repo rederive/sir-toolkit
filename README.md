@@ -7,16 +7,18 @@ Distributes the **SIR verified-recompose** methodology as a Claude Code plugin.
 ## Add the marketplace
 
 ```
-/plugin marketplace add rederive/sir-toolkit     # once it's pushed to GitHub
+/plugin marketplace add rederive/sir-toolkit
 /plugin install sir@sir-toolkit
 ```
 
-Or, before it's on GitHub, from a local checkout:
+Then install the two CLIs the plugin drives:
 
 ```
-/plugin marketplace add ~/sir-toolkit
-/plugin install sir@sir-toolkit
+npm i -g rederive                          # the rdv verifier (npm)
+npm i -g github:rederive/sir-factory       # the build orchestrator
 ```
+
+(Developing locally? `/plugin marketplace add ~/sir-toolkit` works from a checkout.)
 
 ## What's in it
 
