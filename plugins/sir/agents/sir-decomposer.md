@@ -157,25 +157,14 @@ reconstruction must export a plain function of the SIG's signature, driven ident
   The generator emits `[opts, chain, input]` tuples that stratify the chain (named colors/modifiers, `.hex/.rgb/.ansi256`,
   per-level downsampling).
 
-## CONCISION — the SIR is a contract, not a tutorial (the redent lesson)
+## CONCISION — calibrate against the examples, not against fear
 
-The oracle is the substrate; SIR prose is never load-bearing. Size the SIR to the unit's **semantic density**,
-not to defensiveness — a ≤10-line pure function should yield roughly a **≤40-line SIR**. The redent UAT produced
-a 116-line SIR for a 5-line function; two-thirds of it was waste, and redundant prose is worse than waste: the
-slugify divergence was CAUSED by a prose comment contradicting the pseudo-code. Every restatement is another
-surface that can desync. Rules:
-
-- **State each load-bearing fact ONCE, in its home section.** Do not echo the same distinction in ANCHOR, the
-  mechanism gloss, and ENVELOPE.
-- **Worked examples in the SIR: at most ~3, and only DISCRIMINATORS** — cases that kill the plausible-wrong
-  implementations (the `\s`-instead-of-`[ \t]` trap; the `split('\n')` trap). The full example set lives in the
-  ORACLE as executable vectors; never restate vectors as prose "confirmed edge cases."
-- **No consequence-derivation prose.** If a behavior follows from the pinned mechanism (a verbatim regex, a
-  stated branch order), the oracle discriminates it — don't narrate it.
-- **Defensive escalation is HARDEN-mode only.** GUARD-PINNED blocks, prohibition callouts ("do NOT write X"),
-  and extended normative examples are earned by an OBSERVED divergence at that exact point — never applied cold.
-- What always stays, at full precision: verbatim load-bearing literals (regexes, tables' extraction specs),
-  the genuinely non-obvious semantic distinctions, branch order, SIG/KIND/SEAM/ENVELOPE, and provenance.
+Before writing, read BOTH exemplars in `examples/` (relative to this plugin): **`minimal.sir`** (a 5-line
+function → 37-line contract, blind-quorum-proven) and **`complex.sir`** (an 82-line parser → 155 lines, every
+line earning its place). Match their register to your unit's semantic density — the oracle is the substrate,
+so vectors are never restated as prose, each load-bearing fact appears once, and defensive escalations
+(GUARD-PINNED blocks, "do NOT write X") appear ONLY in HARDEN mode, tagged `EARNED` with the divergence that
+forced them — exactly as minimal.sir demonstrates.
 
 ## OUTPUT — two files (three if the unit has carried data; paths given in the task)
 
