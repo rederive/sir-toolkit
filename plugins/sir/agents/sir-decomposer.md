@@ -100,6 +100,10 @@ The SIR and the input-generator are a CLOSED PAIR. Before finishing, cross-check
   demonstrated charmap MUST list `û` — not just `ü`.
 - Conversely, do not let `genInputs` emit any value whose behavior the SIR leaves to a carried-data table the
   blind engineer was not given.
+- **The chaos stanza closes the same way.** Every out-of-domain input `genInputs` emits must have its behavior
+  derivable from the SIR's `OUT-OF-DOMAIN` stanza — a blind engineer reading only the SIR must be able to predict
+  the throw or the exact degraded output. If a chaos case produces a degradation the SIR doesn't describe, the
+  contract is under-specified at its most dangerous point (silent wrong-doing on bad input) — write it down.
 A blind engineer holding ONLY the SIR must be able to produce every expected the generator + real package will
 check. If they cannot, the SIR is under-specified — fix it now.
 
@@ -111,7 +115,20 @@ The curated prefix must include at least one case for:
 - every BRANCH in the pipeline;
 - every documented edge / degenerate case (empty, whitespace-only, collisions, throws);
 - every error/throw path;
-- **every in-scope char-class / value** the SIR documents (each accent, each symbol, each locale override).
+- **every in-scope char-class / value** the SIR documents (each accent, each symbol, each locale override);
+- **OUT-OF-DOMAIN (chaos) — UNCONDITIONAL, for EVERY unit that takes structured input, pure or stateful.** Throw
+  structurally-malformed inputs of the declared shape at the real function: missing/empty required fields
+  (`{person: ''}`, `{}`), type-violations (a number where a string is expected), absurd values, wrong nesting.
+  Stamp whatever the real code does — a throw records as `{__throw}` (existing machinery), and a **SILENT
+  DEGRADATION** (the function returns a lossy/partial result instead of throwing) records as an ordinary vector.
+  That degradation surface is the single highest-value thing this generator captures: it is exactly where a unit
+  quietly does the wrong thing on bad input, and it must be in the oracle (and documented in the SIR's
+  `OUT-OF-DOMAIN` stanza) or a blind re-emitter will silently diverge there. Keep chaos inputs CODEC-FAITHFUL
+  (empty strings, missing keys, wrong-but-JSON types all qualify); a garbage value that can't round-trip the codec
+  goes in the SIR's `OUT-OF-ENVELOPE` prose instead, not `genInputs`.
+  Do NOT let the pure-vs-stateful routing decide this: a pure unit gets the chaos stanza the same way a stateful
+  one does. "Domain-bounded generator" governs the RANDOM FILL (which stays in-shape so stamping is sound); the
+  curated prefix still carries the out-of-domain cases explicitly.
 Because both the frozen (teaching) slice and the held-out (grading) slice are drawn from this, coverage gaps
 surface at the cheap QUORUM gate instead of only at the differential. Stratify; do not merely sample.
 
@@ -182,7 +199,19 @@ forced them — exactly as minimal.sir demonstrates.
                             # CONSTRUCTOR) — see EXPORT-SHAPE SEAMS below. Absent = the export is called directly.
    SIG <full signature incl. options>
    DEPENDS-ON <list | none>
+   [UNGUARDED-PRECONDITION <expr> assumes <condition>  DISCHARGE: caller | unchecked]
+                            # Emit ONE line PER unguarded input dereference you observe while reading the source:
+                            # a field access, index, or call on an input the unit does NOT null/shape/type-check
+                            # before using (e.g. `envelope.person.firstName` when `person` is never guarded).
+                            # You already see these — this line just makes the silent assumption explicit at
+                            # decompose time. DISCHARGE names WHO guarantees the precondition holds: `caller` if a
+                            # named upstream contract enforces it, `unchecked` if nobody does (an unattested claim —
+                            # the same class the carried-data authority gate refuses; flag it, don't hide it).
    BEHAVIOR  # ordered pipeline / BRANCH nodes — exact + complete
+   [OUT-OF-DOMAIN  # REQUIRED whenever the unit accepts structured input it does not fully validate. What the real
+                   # code does with malformed input OUTSIDE the declared shape — a throw, OR a SILENT DEGRADATION
+                   # (a lossy/partial output instead of an error). This surface IS part of the contract: a blind
+                   # re-emitter must reproduce it, so it must be written down. See the generator's chaos stanza.]
    ORACLE value -> oracle.json
    SCOPE <in-contract vs carried-data (with the demonstrated in-scope subset, self-consistent with genInputs)
           vs out-of-contract>
