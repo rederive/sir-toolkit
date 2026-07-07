@@ -121,14 +121,20 @@ is the difference between the del matcher's `bq/grade.mjs`, which was sound, and
 
 ## Authoring the oracle bundle (what decompose/stamp produce)
 
-- `<bundle>/spec.md` (the SIR) — the contract: signature + behavior, the pipeline ORDER, edge/option/error
-  semantics, exact regexes/constants, and the in-scope domain. It must **NOT contain the original source** —
-  re-emit is original-deleted. Where a unit is verified for a SUBSET, the SIR carries an `ENVELOPE` line that
-  `pack` propagates to the package manifest + README (so a reuser knows it is not a general drop-in).
-- `<bundle>/oracle.json` — vectors mode `{mode:"vectors", exportName, unit, vectors:[FROZEN], heldout:[DISJOINT]}`
+The factory names these EXACTLY. Do not invent alternates — a `spec.md` is a divergence; the SIR is always the
+`.sir` file below. `rdv check` and the manifest resolve `sir/<unit>.sir`, so any other name is unverifiable.
+
+- `<workdir>/sir/<unit>.sir` (the SIR — plain text, NOT markdown) — the contract: signature + behavior, the
+  pipeline ORDER, edge/option/error semantics, exact regexes/constants, and the in-scope domain. It must **NOT
+  contain the original source** — re-emit is original-deleted. Where a unit is verified for a SUBSET, the SIR
+  carries an `ENVELOPE` line that `pack` propagates to the package manifest + README (so a reuser knows it is
+  not a general drop-in). (Packed location: `sir/<unit>.sir`.)
+- `<workdir>/sir/<unit>.inputs.mjs` (the input generator) — the stratified `genInputs(n, rnd)` the decomposer
+  emits alongside the SIR; `sir-factory stamp` runs it against the real unit to fill expecteds.
+- `<workdir>/oracle.json` — vectors mode `{mode:"vectors", exportName, unit, vectors:[FROZEN], heldout:[DISJOINT]}`
   (only `heldout` is graded; `vectors` teach the prompt) **or** property mode `{mode:"property", generator, n,
   properties:[{name,kind}], harness?}`. Expecteds are filled by `sir-factory stamp` from the REAL unit — never
-  by the model.
+  by the model. (Packed location: `oracles/<unit>.json`.)
 - **Saturate multi-value coverage** (quorum is only as strong as held-out coverage): for any op that folds over
   a list (ANY/ALL/tries-each), add a DISCRIMINATING vector where only a NON-FIRST element satisfies — a
   `[matches, …]` case does not discriminate, `[no-match, matches]` does. A single-element list never tests
