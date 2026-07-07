@@ -11,6 +11,8 @@ Distributes the **SIR verified-recompose** methodology as a Claude Code plugin.
 /plugin install sir@sir-toolkit
 ```
 
+The plugin tracks `main` (rolling release — no pinned version), so `/plugin marketplace update sir-toolkit` followed by `/reload-plugins` always pulls the latest agents and skills.
+
 Then install the two CLIs the plugin drives:
 
 ```
