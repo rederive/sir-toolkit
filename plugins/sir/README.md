@@ -13,6 +13,8 @@ Conforms to **SIR Schema v0.4** ([canonical repo](https://github.com/rederive/si
 
 **Skills** (`skills/`)
 - `sir-verify` — the verified-recompose loop as a tool: drives the `sir-factory` CLI (install → decompose → stamp → re-emit → grade → pack) and `rdv` (check / resynth) via the role agents. Holds the oracle-sourcing decision tree, the two-legs discipline (differential + quorum, non-substitutable), the off-fit-class guidance, and the grader-soundness checklist.
+- `preflight` — build a measured-strength characterization oracle for zero-test / weakly-tested code before you re-derive or migrate it (coverage → adversarial review → mutation testing → chaos; gate on a mutation score).
+- `greenfield-quorum` — build NEW code leaf-by-leaf as verified zero-dep units, using a QUORUM of npm references (run once, sandboxed) to derive each leaf's oracle AND surface the genuine decisions the ecosystem disagrees on — so a human decides them on purpose, at product altitude, instead of by accident. Includes `quorum.mjs` (the mechanical agreement/clustering helper).
 
 ## Dependencies (shipped separately, NOT bundled)
 
