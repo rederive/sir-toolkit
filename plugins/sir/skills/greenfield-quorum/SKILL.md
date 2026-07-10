@@ -82,19 +82,38 @@ the two NEW parts — **reference discovery/quorum** and **the decision-surfacer
    reference does on garbage) — it goes in the SIR's `OUT-OF-DOMAIN` stanza. Split frozen (teaching) / held-out
    (grading), disjoint.
 
-8. **SYNTHESIZE (blind quorum).** Write a SPEC-FIDELITY SIR that states the RULING (the behavior + its
-   discriminators + the out-of-domain note) — NOT an implementation; leave the technique open. Spawn N ≥ 3
+8. **SYNTHESIZE (blind quorum), in TypeScript.** Write a SPEC-FIDELITY SIR that states the RULING (the behavior +
+   its discriminators + the out-of-domain note) — NOT an implementation; leave the technique open. Spawn N ≥ 3
    `sir-reemitter-cr` agents against a clean room (the SIR + the FROZEN oracle only; held-out hidden). Grade every
    emission against the FULL oracle including held-out; require quorum (≥2 agree on the full held-out set). A
    held-out miss = the SIR was ambiguous → harden it and re-emit. Install the winner as the verified zero-dep leaf.
+   **Emit `.ts`, not `.js`** — the SIR's `SIG` line carries the types (`moneyRound(amount: number) -> number`), so
+   the re-emitter writes `export default function moneyRound(amount: number): number`. Types are part of the
+   contract, not decoration; the leaf must `tsc --noEmit` clean under `strict`.
 
 9. **GLUE by PROPERTIES.** The orchestration that composes verified leaves has no reference — verify it with
    property oracles (round-trip, idempotence, conservation, ordering, monotonicity) plus the project rulings that
    govern composition (e.g. "sum exact, round once at the total"). No reference needed; the properties are the
-   oracle.
+   oracle. Declare TypeScript interfaces for the composite shapes (the feature's inputs/outputs).
 
 10. **INSTALL + LEARN.** The verified leaf + its rulings go into the project (and, if catalog-worthy, the
     catalog). Next feature that needs this leaf already understands it — greenfield novelty shrinks with use.
+
+11. **PACKAGE — the verification ships WITH the code.** A verification product whose deliverable can't be
+    re-verified by the recipient is a broken deliverable. Package so `npm test` re-runs the exact held-out proof:
+    - **TypeScript source** (`src/*.ts`), strict, typechecks clean (types from the SIGs; interfaces for the glue).
+    - **The held-out oracles ARE the test suite.** Copy each leaf's oracle into `test/oracles/` and write a
+      `test/leaves.test.ts` (`node:test`) that asserts every held-out vector — expected values were
+      execution-stamped, never hand-authored, so this is *stronger* than a hand-written suite (it can't inherit an
+      author's blind spot, and the held-out split is anti-overfit). Add the glue's property checks as
+      `test/glue.test.ts`.
+    - **`package.json`:** `dependencies: {}` (runtime is zero-dep BY CONSTRUCTION — that's the whole point);
+      `devDependencies: { typescript, @types/node }` (build/typecheck only, never shipped, both type-only);
+      scripts `{ start, test: "node --test 'test/*.test.ts'", typecheck: "tsc --noEmit" }`; `engines.node >=23.6`
+      (native type-stripping runs `.ts` directly — no build step to run or test).
+    - **`tsconfig.json`:** strict, `module: nodenext`, `allowImportingTsExtensions`, `noEmit`.
+    - **Prove it before declaring done:** `node --test` green (leaves on held-out + glue properties), `tsc --noEmit`
+      clean, `dependencies` empty. A developer who receives the app runs `npm test` and re-executes the verification.
 
 ## SANDBOX discipline (non-negotiable)
 
