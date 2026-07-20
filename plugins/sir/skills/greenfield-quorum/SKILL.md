@@ -36,7 +36,7 @@ the two NEW parts — **reference discovery/quorum** and **the decision-surfacer
 1. **DISCOVER the reference set.** Find 3–5 packages implementing the leaf (your knowledge + `npm search`).
    **Always include the platform builtin as a spec-anchor when one exists** (`Intl.NumberFormat`,
    `Intl.DateTimeFormat`, `Intl.PluralRules`, `URL`, `TextEncoder`). The builtin is the standard AND zero-dep —
-   often the quorum reveals the packages are strictly worse than what's already in the runtime.
+   often the quorum reveals the packages are strictly worse than what's already in the runtime. And when the builtin embodies the ruling, it becomes the **implementation**, not merely the oracle anchor (step 8): you wrap it, you don't rebuild it.
 
 2. **QUORUM STAMP (sandboxed).** In a throwaway dir: `npm init -y && npm i --ignore-scripts <the packages>`.
    Write ONE call-adapter per reference (each API differs — that's the discovery work) and a **stratified +
@@ -90,6 +90,27 @@ the two NEW parts — **reference discovery/quorum** and **the decision-surfacer
    **Emit `.ts`, not `.js`** — the SIR's `SIG` line carries the types (`moneyRound(amount: number) -> number`), so
    the re-emitter writes `export default function moneyRound(amount: number): number`. Types are part of the
    contract, not decoration; the leaf must `tsc --noEmit` clean under `strict`.
+
+   **When the chosen reference is a platform builtin, WRAP it — do not reconstruct it.** A builtin (`Intl.*`,
+   `crypto.randomUUID`, `URL`, `TextEncoder`, `structuredClone`) is part of the runtime, not a package — so a thin
+   guarded wrapper over it is *still* `dependencies: {}` zero-dep, AND it is **definitionally correct**: it cannot
+   diverge from the standard it implements. A from-scratch reconstruction is only as correct as your oracle's input
+   coverage — it will pass held-out and still be silently wrong on the domain you did not sample. (The currency run
+   rebuilt `Intl` and got `ISK`/`CLF` minor units wrong: no held-out vector exercised them, so the gate could not
+   see it.) So when a builtin embodies the ruling, the verified leaf **is** `wrap(builtin) + input guards`, and the
+   SIR names the builtin as the technique. Reconstruct ONLY when you deliberately need runtime-independence (e.g.
+   `Intl` output drifts across ICU versions) — and then the oracle MUST cover the standard's FULL domain (every
+   currency, every locale), not a sample, or the reconstruction is unsound. Default to wrap.
+
+   *Worked micro-example — the reflex.* Leaf: `uuid` (generate a v4 UUID). Discover: `uuid`, `nanoid`,
+   **`crypto.randomUUID()`** (builtin — Node >= 15, every browser). The builtin fully implements RFC 4122 v4, zero
+   behavioral gap, so the verified leaf is a thin wrapper: `export default () => crypto.randomUUID()`. Do NOT
+   hand-roll `xxxxxxxx-xxxx-4xxx-yxxx-...` from `Math.random`/`getRandomValues` — the training data is saturated
+   with those, so a blind re-emitter reaches for one FIRST, re-implementing (often with a weaker RNG or a wrong
+   variant nibble) a thing the runtime already does correctly. Because the output is random, the oracle here is a
+   **property oracle** (format regex, version nibble `4`, variant nibble in `{8,9,a,b}`, uniqueness across N calls),
+   not value vectors — but the implementation is still just the wrapper. Random != quarantine when a builtin is the
+   authority.
 
 9. **GLUE by PROPERTIES.** The orchestration that composes verified leaves has no reference — verify it with
    property oracles (round-trip, idempotence, conservation, ordering, monotonicity) plus the project rulings that
