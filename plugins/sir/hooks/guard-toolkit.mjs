@@ -34,7 +34,7 @@ function isSafeRoot(root) {
 function maintenanceWindowOpen() {
   try { return process.env.SIR_ALLOW_TOOLKIT_EDITS === '1' || existsSync(`${HOME}/.sir-allow-toolkit-edits`); } catch { return false; }
 }
-function pkgRoot(bin) {
+function pkgProtected(bin) {
   try {
     const p = execSync(`command -v ${bin} 2>/dev/null`, { encoding: 'utf8' }).trim();
     if (!p) return null;
@@ -42,9 +42,20 @@ function pkgRoot(bin) {
     for (let i = 0; i < 12 && d !== '/'; i++) {
       const pj = `${d}/package.json`;
       if (existsSync(pj)) {
-        let name = '';
-        try { name = JSON.parse(readFileSync(pj, 'utf8')).name || ''; } catch {}
-        if (TOOLKIT_NAMES.has(name)) { const root = realpathSync(d); return isSafeRoot(root) ? root : null; }
+        let name = '', files = [];
+        try { const pkg = JSON.parse(readFileSync(pj, 'utf8')); name = pkg.name || ''; files = Array.isArray(pkg.files) ? pkg.files : []; } catch {}
+        if (TOOLKIT_NAMES.has(name)) {
+          const root = realpathSync(d);
+          if (!isSafeRoot(root)) return null;
+          // Scope protection to the package's SHIPPED surface (2026-08-03): when the
+          // toolkit resolves to a MONOREPO root (rdv is npm-linked to a checkout whose
+          // root package IS the toolkit), protecting the whole root also freezes site/,
+          // marketing/, etc. — which are not the verifier. files[] declares exactly what
+          // ships; protect those paths + package.json. No files[] → whole root (fail-closed).
+          const entries = files.filter((f) => typeof f === 'string' && !f.includes('..'));
+          if (!entries.length) return { root, paths: [root] };
+          return { root, paths: [`${root}/package.json`, ...entries.map((f) => resolve(root, f.replace(/\/+$/, '')))] };
+        }
         // a NON-toolkit package.json (project / monorepo / home): do NOT stop here — keep walking up.
       }
       d = dirname(d);
@@ -52,7 +63,8 @@ function pkgRoot(bin) {
   } catch {}
   return null;
 }
-const roots = [...new Set(['rdv', 'sir-factory'].map(pkgRoot).filter(Boolean))];
+const found = [...new Map(['rdv', 'sir-factory'].map(pkgProtected).filter(Boolean).map((f) => [f.root, f])).values()];
+const roots = found.flatMap((f) => f.paths); // "roots" = the protected paths the matchers below enforce
 
 // Optional audit trail — set SIR_GUARD_AUDIT_LOG=/path/to/log.jsonl to record denials + maintenance bypasses.
 // Off by default (no path is baked in). Silent + never throws.
