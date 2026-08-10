@@ -116,13 +116,13 @@
       "sections": [
         "\u00a722"
       ],
-      "implemented": false,
+      "implemented": true,
       "rungs": [
         "deterministic-schedule"
       ],
       "detect": "the SIR declares RING",
-      "blockedBy": "par-interleaving now implemented; RING recognition + R_ring == R_free check remain \u2014 SIR_V04_PLAN Phase 4",
-      "summary": "token-coordinated concurrency reduces to a deterministic schedule"
+      "summary": "token-coordinated concurrency reduces to a deterministic schedule",
+      "evidence": "rederive/experiments/v04-phase4-ring \u2014 R_ring subset R_free checked; recognition (preserving) vs imposition (refinement) distinguished; a fake ring caught. @fixture/ring correct VERIFIED 2/2, broken FAILED 0/2"
     }
   },
   "$rungs": {
