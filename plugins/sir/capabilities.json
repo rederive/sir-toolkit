@@ -17,7 +17,7 @@
   ],
   "schemaVersion": "1",
   "toolchain": {
-    "maxSpecVersion": "0.3"
+    "maxSpecVersion": "0.4"
   },
   "features": {
     "vectors": {
@@ -74,13 +74,13 @@
       "sections": [
         "\u00a720"
       ],
-      "implemented": false,
+      "implemented": true,
       "rungs": [
         "virtual-time"
       ],
       "detect": "the SIR declares a time.timer / microtask control effect",
-      "blockedBy": "timer half landed with \u00a721 (makeFakeTimers in rdv); the MICROTASK scheduler half remains \u2014 SIR_V04_PLAN Phase 1",
-      "summary": "timers + microtasks on virtual time, resolution order deterministic"
+      "summary": "timers + microtasks on virtual time, resolution order deterministic",
+      "evidence": "rederive/experiments/v04-phase1-scheduler \u2014 both race branches reachable + replayable (50x each); the real-clock control ran 20/20 one way, never executing the other branch"
     },
     "lifecycle": {
       "since": "0.4",
@@ -100,7 +100,7 @@
       "sections": [
         "\u00a719"
       ],
-      "implemented": false,
+      "implemented": true,
       "rungs": [
         "differential-sampled",
         "sampled",
@@ -108,8 +108,8 @@
         "exhaustive"
       ],
       "detect": "the SIR declares PAR over dependent sub-traces, or a concurrency bound",
-      "blockedBy": "explorer proven in experiments/v04-phase0-pmap but not wired into rdv \u2014 Phase 3",
-      "summary": "verification over the space of interleavings, with the rung reported honestly"
+      "summary": "verification over the space of interleavings, with the rung reported honestly",
+      "evidence": "rederive/experiments/v04-phase3-par + v04-phase0-pmap \u2014 @fixture/par correct VERIFIED 2/2, completion-order-keyed FAILED 0/2; coverage stamped (8 and 54 schedules, exhaustive)"
     },
     "ring": {
       "since": "0.4",
@@ -121,7 +121,7 @@
         "deterministic-schedule"
       ],
       "detect": "the SIR declares RING",
-      "blockedBy": "depends on par-interleaving \u2014 SIR_V04_PLAN Phase 4",
+      "blockedBy": "par-interleaving now implemented; RING recognition + R_ring == R_free check remain \u2014 SIR_V04_PLAN Phase 4",
       "summary": "token-coordinated concurrency reduces to a deterministic schedule"
     }
   },
