@@ -1,0 +1,102 @@
+{
+  "$comment": [
+    "THE CAPABILITY MODEL (docs/SIR_V04_PLAN.md F.1) — the single source of truth for",
+    "what the toolchain can actually DO, read by three consumers that must never",
+    "duplicate it: rdv (what it can verify), sir-factory pack (what it may stamp),",
+    "and the toolkit prompts (what a decomposer may propose).",
+    "",
+    "specVersion remains the COARSE gate: an rdv predating this file ignores it and",
+    "still halts on a version it doesn't know, which must stay true (plan A6). This",
+    "file REFINES that for consumers who understand it — a bundle is verifiable when",
+    "every feature it declares is implemented here, so a partially-built v0.4 is",
+    "usable instead of a cliff.",
+    "",
+    "ADDING A FEATURE HERE IS A CLAIM THAT THE VERIFIER IMPLEMENTS IT. Do not add one",
+    "to unblock generation; that inverts the whole point (the version must track what",
+    "rdv can check, not what the schema has published)."
+  ],
+  "schemaVersion": "1",
+  "toolchain": { "maxSpecVersion": "0.3" },
+
+  "features": {
+    "vectors": {
+      "since": "0.2",
+      "sections": ["§14"],
+      "implemented": true,
+      "rungs": ["frozen+heldout"],
+      "detect": "every bundle: the default value-oracle mode",
+      "summary": "frozen + held-out input/output vectors graded by quorum"
+    },
+    "carried-data": {
+      "since": "0.3",
+      "sections": ["§18"],
+      "implemented": true,
+      "rungs": ["hash+authority"],
+      "detect": "manifest.carriedData is non-empty",
+      "summary": "byte-exact constant tables + a re-runnable independent-authority assertion"
+    },
+    "envelope": {
+      "since": "0.3",
+      "sections": ["§17"],
+      "implemented": true,
+      "rungs": ["in-scope+boundary"],
+      "detect": "the SIR declares ENVELOPE",
+      "summary": "the verified input scope is part of the contract"
+    },
+    "trace-seam": {
+      "since": "0.3",
+      "sections": ["§15", "§16"],
+      "implemented": true,
+      "rungs": ["ordered-emit+reply"],
+      "detect": "a unit's oracle mode is \"trace\"",
+      "summary": "effect units verified over an injected boundary the harness owns"
+    },
+
+    "scheduler": {
+      "since": "0.4",
+      "sections": ["§20"],
+      "implemented": false,
+      "rungs": ["virtual-time"],
+      "detect": "the SIR declares a time.timer / microtask control effect",
+      "blockedBy": "no injected event loop in rdv — SIR_V04_PLAN Phase 1",
+      "summary": "timers + microtasks on virtual time, resolution order deterministic"
+    },
+    "lifecycle": {
+      "since": "0.4",
+      "sections": ["§21"],
+      "implemented": false,
+      "rungs": ["armed-fired-cancelled"],
+      "detect": "the SIR declares a cancellable resource (timer/handle/subscription)",
+      "blockedBy": "no third oracle channel in rdv — SIR_V04_PLAN Phase 2",
+      "summary": "resource lifecycle asserted separately; catches leaks invisible to value+trace"
+    },
+    "par-interleaving": {
+      "since": "0.4",
+      "sections": ["§19"],
+      "implemented": false,
+      "rungs": ["differential-sampled", "sampled", "partial-order-reduction", "exhaustive"],
+      "detect": "the SIR declares PAR over dependent sub-traces, or a concurrency bound",
+      "blockedBy": "explorer proven in experiments/v04-phase0-pmap but not wired into rdv — Phase 3",
+      "summary": "verification over the space of interleavings, with the rung reported honestly"
+    },
+    "ring": {
+      "since": "0.4",
+      "sections": ["§22"],
+      "implemented": false,
+      "rungs": ["deterministic-schedule"],
+      "detect": "the SIR declares RING",
+      "blockedBy": "depends on par-interleaving — SIR_V04_PLAN Phase 4",
+      "summary": "token-coordinated concurrency reduces to a deterministic schedule"
+    }
+  },
+
+  "$rungs": {
+    "$comment": "Verification STRENGTH, weakest first. A bundle records the rung it earned; a feature gates which rungs are AVAILABLE, never whether a unit may ship (plan design move 2).",
+    "order": [
+      "differential-sampled",
+      "sampled",
+      "partial-order-reduction",
+      "exhaustive"
+    ]
+  }
+}
