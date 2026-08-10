@@ -118,11 +118,13 @@
       ],
       "implemented": true,
       "rungs": [
-        "deterministic-schedule"
+        "deterministic-schedule",
+        "refinement-checked",
+        "live"
       ],
       "detect": "the SIR declares RING",
-      "summary": "token-coordinated concurrency reduces to a deterministic schedule",
-      "evidence": "rederive/experiments/v04-phase4-ring \u2014 R_ring subset R_free checked; recognition (preserving) vs imposition (refinement) distinguished; a fake ring caught. @fixture/ring correct VERIFIED 2/2, broken FAILED 0/2"
+      "summary": "token-coordinated concurrency reduces to a deterministic schedule; checked as a refinement (safety) AND for token loss/duplication (liveness)",
+      "evidence": "rederive/experiments/v04-phase4-ring \u2014 R_ring subset R_free checked; recognition (preserving) vs imposition (refinement) distinguished; a fake ring caught. @fixture/ring correct VERIFIED 2/2, broken FAILED 0/2 | LIVENESS (Phase 4b): token channel held->passed|released asserts mutual exclusion + return; generic halt detection; @fixture/ring-live sound VERIFIED 1/1, lost and duplicated both FAILED 0/1 on units whose OUTPUT IS CORRECT"
     }
   },
   "$rungs": {
