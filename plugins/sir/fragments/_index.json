@@ -1,0 +1,9 @@
+{
+  "$comment": "F.1 consumer 3: the prompt payload is DERIVED, not maintained. A role is given exactly the fragments for the features it may use — implemented ∩ relevant — so a construct the verifier cannot check never reaches a decomposer's context, and a re-emitter reconstructing a pure function never reads a word about concurrency.",
+  "fragments": {
+    "par-interleaving": "par-interleaving.md",
+    "ring": "ring.md",
+    "scheduler": "scheduler.md",
+    "lifecycle": "lifecycle.md"
+  }
+}

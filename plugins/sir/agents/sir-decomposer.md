@@ -107,6 +107,34 @@ The SIR and the input-generator are a CLOSED PAIR. Before finishing, cross-check
 A blind engineer holding ONLY the SIR must be able to produce every expected the generator + real package will
 check. If they cannot, the SIR is under-specified — fix it now.
 
+## CONCURRENCY KEYWORDS ARE HINTS — the contract lives in DESCRIPTION + INVARIANT
+
+`PAR` and `RING` (and a declared timer/microtask or cancellable-resource effect) tell the VERIFIER which
+mode to run. They tell the blind engineer almost nothing: unlike `TAKES` or `GIVES`, their semantics are
+not inferable from their syntax. So never let a keyword carry meaning by itself — write the behavior out:
+
+- **`PAR`** — say what makes the sub-traces independent, and pin the two things that look alike and aren't:
+  *what the result is keyed by* (input position, not completion order) and *the concurrency bound* with the
+  instant a unit counts as in flight.
+- **`RING`** — say who takes the token, who passes to whom, and who releases it. State mutual exclusion
+  (at most one holder ever) and no-loss (released exactly once, nobody holding at return) as INVARIANT
+  lines. Both are invisible on the value channel: a unit with correct output can still duplicate or strand
+  the token.
+- **Empty input** deserves its own INVARIANT for both — it is the case where "do nothing" and "do the
+  protocol zero times" differ observably.
+
+**Name the collaboration boundary explicitly.** Concurrency units are handed a harness-owned object
+(a gate, a clock, a channel), and the split of labor between unit and harness is the ambiguity these
+contracts fail on — in the v0.4 cleanroom trial, 2 of 3 blind emitters read "each mapping is performed by
+awaiting `gate.open(value)`" as *the gate computes the mapping* and returned the input unchanged. They
+were right to; the sentence permits it. Write which side computes, and what the harness call resolves
+with. Every emitter got the PAR construct itself right — the divergence was on the ordinary sentence
+next to it, which is where it usually is.
+
+Acceptance is unchanged and unforgiving: **a cold re-emitter builds it correctly from the SIR alone.**
+Quorum divergence means the construct needed a footnote to be understood, which means it is specified
+wrong. Harden the SIR; never add the footnote.
+
 ## COMPREHENSIVE, STRATIFIED `genInputs(n, rnd)`
 
 Return a **curated deterministic coverage prefix FIRST**, then fill to `n` with seeded random in-scope inputs.
