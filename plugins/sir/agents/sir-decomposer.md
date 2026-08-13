@@ -123,13 +123,21 @@ not inferable from their syntax. So never let a keyword carry meaning by itself 
 - **Empty input** deserves its own INVARIANT for both — it is the case where "do nothing" and "do the
   protocol zero times" differ observably.
 
-**Name the collaboration boundary explicitly.** Concurrency units are handed a harness-owned object
-(a gate, a clock, a channel), and the split of labor between unit and harness is the ambiguity these
-contracts fail on — in the v0.4 cleanroom trial, 2 of 3 blind emitters read "each mapping is performed by
-awaiting `gate.open(value)`" as *the gate computes the mapping* and returned the input unchanged. They
-were right to; the sentence permits it. Write which side computes, and what the harness call resolves
-with. Every emitter got the PAR construct itself right — the divergence was on the ordinary sentence
-next to it, which is where it usually is.
+**Name the collaboration boundary explicitly, and name it the RIGHT WAY ROUND.** Concurrency units are
+handed a harness-owned object (a gate, a clock, a channel), and the split of labor between unit and
+harness is the ambiguity these contracts fail on — in the v0.4 cleanroom trial, 2 of 3 blind emitters
+read "each mapping is performed by awaiting `gate.open(value)`" as *the gate computes the mapping* and
+returned the input unchanged. They were right to; the sentence permits it. Write which side computes,
+and what the harness call resolves with.
+
+**The default is not negotiable: the UNIT does the domain work; the harness collaborator only signals
+timing.** `gate.open(v)` resolves with `v` unchanged and computes nothing; a clock decides when, never
+what. Stating the boundary is not enough if you state it backwards — a weak model handed "return the
+even integers, at most N in flight" wrote a flawless, unambiguous contract that defined the result as
+"the elements the gate says are truthy", and three blind emitters implemented it identically and
+returned *every* element. It converged. It respected the bound. It had thrown the requirement away.
+**Quorum measures agreement, not fidelity**, so nothing downstream can catch this: if a requirement
+names a computation, that computation is the unit's, and the SIR must say so.
 
 Acceptance is unchanged and unforgiving: **a cold re-emitter builds it correctly from the SIR alone.**
 Quorum divergence means the construct needed a footnote to be understood, which means it is specified
