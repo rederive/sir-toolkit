@@ -7,8 +7,9 @@ description: >
   implements (slug, currency/number/date formatting, rounding, transliteration, parsing, pluralize, humanize,
   etc.). The flow: doesNotUnderstand-decompose the feature into named leaves + glue → for each leaf, discover a
   QUORUM of reference packages → run them (sandboxed) to find where they AGREE (the contract) and DISAGREE (the
-  decisions) → surface only the GENUINE forks to the human at product altitude → stamp an oracle from the chosen
-  reference → synthesize a verified zero-dep implementation via blind quorum → install. You keep the behavior;
+  decisions) → surface only the GENUINE forks to the human at product altitude → ratify the intent contract (play
+  the decomposition back in the giver's terms; no requirement dropped) BEFORE any oracle → stamp an oracle from the
+  chosen reference → synthesize a verified zero-dep implementation via blind quorum → install. You keep the behavior;
   you ship none of the packages. NOT for pure-novel logic with no reference (that falls to property oracles /
   a human ruling) — see BOUNDARIES.
 ---
@@ -76,7 +77,32 @@ the two NEW parts — **reference discovery/quorum** and **the decision-surfacer
    inherited: index them by intent ("this project: locale-aware, de-DE; rounding: banker's, at-total") so the
    NEXT leaf that hits the same axis does not re-ask. The human is consulted once per *intent*, not per occurrence.
 
-7. **STAMP THE ORACLE from the CHOSEN reference.** The oracle is `sir-factory stamp`-style: execute the reference
+6.5. **THE INTENT CONTRACT — the hard stop before ANY oracle (build-level, runs ONCE).** A perfect oracle for
+   the wrong contract verifies the wrong thing perfectly. So before you stamp a single oracle, play the
+   decomposition back to the requirement-giver **in their terms** and freeze it. The scar this exists to stop
+   (2026-08-13): "return the EVEN integers" was decomposed into a unit that returns "what the gate says is
+   truthy" — it did NOT compute evenness. Three blind emitters built it identically; quorum went 3/3 and the
+   requirement was *gone*. **Quorum measures whether builders converged; it cannot measure whether the contract
+   kept the requirement.** Grade that here, as its own axis.
+   - Write `<build>.contract.yaml`: the giver's ORIGINAL ask decomposed into `requirements` (each `text` in the
+     giver's words, verbatim — NOT the technical restatement; that is the anti-steamroll anchor), each tagged
+     `kind: domain | timing`, and each `satisfied_by:` the leaf/glue unit that computes it (step 0's leaves) —
+     or `waived:` by a frozen ruling. List the `units` with `role: unit | glue | collaborator`. (Schema:
+     `typikon/docs/SCHEMA.md` § intent contract.)
+   - Run `typikon contract --spec typikon.yaml --contract <build>.contract.yaml --ratify --by <giver>`
+     (`typikon` from `~/typikon`, `pipx install ~/typikon`, or `python3 -m typikon.cli`; `--spec` is the
+     project typikon that holds the frozen rulings a waiver may cite — a minimal `rulings: {frozen: []}` is
+     fine when nothing is waived, and step-6 out-of-scope rulings are frozen into it with `typikon rule`).
+   - It **refuses to ratify** while any requirement is `dropped` (no unit), `dangling` (unknown unit), or
+     `pushed-out` (DOMAIN work landed on a collaborator — the scar; the unit does all domain work, a
+     collaborator only signals timing). A refusal means the DECOMPOSITION lost the requirement: go back to
+     step 0 and fix it — never stamp around it. **No oracle is stamped (step 7) until this ratifies.** This is
+     the one gate quorum cannot substitute for: `converge + unfaithful` is a distinct, expensive failure whose
+     cause is the decomposer, and this is where it is caught.
+
+7. **STAMP THE ORACLE from the CHOSEN reference.** *Precondition: the build contract ratified (6.5). Never stamp
+   an oracle for a requirement the contract dropped or pushed out — a held-out oracle over the wrong contract is
+   the steamroll with a green check.* The oracle is `sir-factory stamp`-style: execute the reference
    that embodies the ruling (the package + config, OR the builtin spec-anchor) over the stratified + CHAOS inputs;
    expected values are ALWAYS execution-derived, never hand-authored. Capture the out-of-domain behavior (what the
    reference does on garbage) — it goes in the SIR's `OUT-OF-DOMAIN` stanza. Split frozen (teaching) / held-out
