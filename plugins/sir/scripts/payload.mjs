@@ -19,29 +19,29 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const caps = JSON.parse(readFileSync(join(ROOT, 'capabilities.json'), 'utf8'));
 const index = JSON.parse(readFileSync(join(ROOT, 'fragments/_index.json'), 'utf8'));
 
-const implemented = new Set(Object.entries(caps.features)
-  .filter(([, v]) => v.implemented).map(([k]) => k));
+// The capability model and the ONE feature detector live in rederive beside rdv (SIR_V05_PLAN W.0c). This
+// plugin used to keep its own capabilities.json and a detector that saw only the v0.4 features, while
+// sir-factory's saw only v0.2/v0.3 — so the factory could not stamp a v0.4 bundle. No local copy now.
+let features;
+try { features = await import('rederive/cli/features.mjs'); }
+catch {
+  console.error('payload.mjs needs the rederive package (cli/features.mjs + cli/capabilities.json). Install or link it: `npm link rederive`.');
+  process.exit(2);
+}
+const { capabilities: caps, implementedFeatures, generableFeatures, detectFeatures } = features;
+const implemented = implementedFeatures();
 
 // A payload is what teaches a role to WRITE a construct, so it is gated by
 // `generable` — the Phase 5 claim that cold re-emitters converge on it from the
 // SIR alone — not merely by `implemented`, which only says rdv can check one if
 // it already exists. Verifiable-but-not-writable is a real state, and a feature
 // sitting in it must not reach a decomposer's context.
-const generable = new Set(Object.entries(caps.features)
-  .filter(([, v]) => v.implemented && v.generable).map(([k]) => k));
+const generable = generableFeatures();
 
-/** Mechanically detect the features a SIR uses (A7: a construct, not a judgment call). */
-export function featuresOfSir(text) {
-  const f = new Set();
-  if (/^\s*PAR\b/m.test(text)) f.add('par-interleaving');
-  if (/^\s*RING\b/m.test(text)) f.add('ring');
-  if (/^\s*LIFECYCLE\b/m.test(text) || /\bsetTimer\b/.test(text)) f.add('lifecycle');
-  if (/\bschedule\(|\bvirtual time\b|\btimers\./.test(text)) f.add('scheduler');
-  return [...f];
-}
+/** Mechanically detect the features a SIR uses (A7). Delegates to the shared detector. */
+export const featuresOfSir = (text) => detectFeatures({ sirText: text });
 
 export function payloadFor(features) {
   // Three outcomes, and the third must never be silent: a feature we have a
