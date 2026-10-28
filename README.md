@@ -1,5 +1,10 @@
 # sir-toolkit — a Claude Code plugin marketplace
 
+> **Legacy (SIR v0.4).** This plugin is superseded by **`rederive@rederive`**, which supports SIR v0.5 — one
+> language-neutral primary plus a file per language (JavaScript, TypeScript, Rust), graded against one canonical oracle.
+> Install it instead: `/plugin marketplace add rederive/rederive` then `/plugin install rederive@rederive`, and run
+> `rdv init --yes` in your project. This repository stays available for existing v0.4 workflows and receives no new features.
+
 Distributes the **SIR verified-recompose** methodology as a Claude Code plugin.
 
 > **Two channels, two artifact types.** The *factory* (this methodology — skills + agents + the `sir-factory`/`rdv` CLIs) ships here, as a Claude plugin. The *output* (verified, self-contained units) ships as npm `@rederive/*`.

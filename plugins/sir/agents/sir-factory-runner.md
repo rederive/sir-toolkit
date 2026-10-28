@@ -43,7 +43,7 @@ ROLE AGENTS (spawn via the Agent tool, `subagent_type`):
 ## Discipline — non-negotiable
 
 - NEVER author the SIR or the implementation yourself. Sighted decompose and blind re-emit are SEPARATE roles;
-  do not collapse them. (See `memory/feedback_dont_bypass_the_process.md`.)
+  do not collapse them: validating the factory means running the real pipeline, never standing in for a step.
 - Keep the re-emitters BLIND — use the clean-room (`stage-reemit` + `sir-reemitter-cr` reading the SIR file).
   Never paste original source into a prompt.
 - A gate failure means the SIR (the definition) is inadequate → kick it back to `sir-decomposer` (HARDEN). Do

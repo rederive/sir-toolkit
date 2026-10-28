@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sir-toolkit",
-  "description": "SIR verified-recompose — decompile a package into a verified, self-contained re-implementation: a sighted decomposer reads the source once and emits a SIR + held-out oracle; N blind clean-room emitters reconstruct from the contract alone; two gates (held-out quorum + saturation differential) decide. The methodology behind the @rederive/* catalog.",
+  "description": "LEGACY (SIR v0.4) \u2014 superseded by rederive@rederive (SIR v0.5: one primary + a file per language, js/ts/rust). Use /plugin marketplace add rederive/rederive. SIR verified-recompose \u2014 decompile a package into a verified, self-contained re-implementation: a sighted decomposer reads the source once and emits a SIR + held-out oracle; N blind clean-room emitters reconstruct from the contract alone; two gates (held-out quorum + saturation differential) decide. The methodology behind the @rederive/* catalog.",
   "owner": {
     "name": "rederive",
     "url": "https://rederive.ai"
@@ -9,11 +9,15 @@
   "plugins": [
     {
       "name": "sir",
-      "description": "SIR verified-recompose toolkit (SIR Schema v0.4): the sir-verify, greenfield-quorum, and preflight skills plus the sir-decomposer / sir-reemitter(-cr) / sir-factory-runner agents. Drives the `sir-factory` CLI to build bundles and `rdv` to verify them (both shipped as dependencies, not bundled).",
-      "author": { "name": "rederive", "url": "https://rederive.ai" },
+      "description": "LEGACY, superseded by rederive@rederive (SIR v0.5). SIR verified-recompose toolkit (SIR Schema v0.4): the sir-verify, greenfield-quorum, and preflight skills plus the sir-decomposer / sir-reemitter(-cr) / sir-factory-runner agents. Drives the `sir-factory` CLI to build bundles and `rdv` to verify them (both shipped as dependencies, not bundled).",
+      "author": {
+        "name": "rederive",
+        "url": "https://rederive.ai"
+      },
       "category": "development",
       "source": "./plugins/sir",
-      "homepage": "https://rederive.ai"
+      "homepage": "https://rederive.ai",
+      "version": "0.4.1"
     }
   ]
 }

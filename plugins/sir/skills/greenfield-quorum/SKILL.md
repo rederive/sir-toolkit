@@ -89,8 +89,11 @@ the two NEW parts — **reference discovery/quorum** and **the decision-surfacer
      `kind: domain | timing`, and each `satisfied_by:` the leaf/glue unit that computes it (step 0's leaves) —
      or `waived:` by a frozen ruling. List the `units` with `role: unit | glue | collaborator`. (Schema:
      `typikon/docs/SCHEMA.md` § intent contract.)
-   - Run `typikon contract --spec typikon.yaml --contract <build>.contract.yaml --ratify --by <giver>`
-     (`typikon` from `~/typikon`, `pipx install ~/typikon`, or `python3 -m typikon.cli`; `--spec` is the
+   - If `typikon` is installed (it is not yet publicly released), run
+     `typikon contract --spec typikon.yaml --contract <build>.contract.yaml --ratify --by <giver>`. Without it, do
+     the same check by hand and show it to the giver: every requirement maps to exactly one unit that does its domain
+     work, none is dropped, dangling or pushed out to a collaborator, and the giver ratifies the list in writing
+     before any oracle is stamped. (With typikon: `--spec` is the
      project typikon that holds the frozen rulings a waiver may cite — a minimal `rulings: {frozen: []}` is
      fine when nothing is waived, and step-6 out-of-scope rulings are frozen into it with `typikon rule`).
    - It **refuses to ratify** while any requirement is `dropped` (no unit), `dangling` (unknown unit), or
